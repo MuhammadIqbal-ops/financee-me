@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { Transaction, TransactionType } from '@/types/database';
 import { toast } from 'sonner';
-
+import { checkBudgetAfterTransaction } from '@/hooks/useBudgetCheck';
 export interface TransactionInput {
   amount: number;
   type: TransactionType;
@@ -43,6 +44,7 @@ export function useTransactions(month?: number, year?: number) {
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { data: profile } = useProfile();
 
   return useMutation({
     mutationFn: async (input: TransactionInput) => {
@@ -56,12 +58,21 @@ export function useCreateTransaction() {
         .single();
 
       if (error) throw error;
-      return data;
+      return { transaction: data, input };
     },
-    onSuccess: () => {
+    onSuccess: async ({ transaction, input }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       toast.success('Transaksi berhasil ditambahkan!');
+
+      // Check budget if it's an expense
+      if (input.type === 'expense' && input.category_id) {
+        await checkBudgetAfterTransaction(
+          input.category_id,
+          input.date,
+          profile?.currency || 'IDR'
+        );
+      }
     },
     onError: (error: Error) => {
       toast.error('Gagal menambahkan transaksi: ' + error.message);
@@ -71,6 +82,7 @@ export function useCreateTransaction() {
 
 export function useUpdateTransaction() {
   const queryClient = useQueryClient();
+  const { data: profile } = useProfile();
 
   return useMutation({
     mutationFn: async ({ id, ...input }: TransactionInput & { id: string }) => {
@@ -82,12 +94,21 @@ export function useUpdateTransaction() {
         .single();
 
       if (error) throw error;
-      return data;
+      return { transaction: data, input };
     },
-    onSuccess: () => {
+    onSuccess: async ({ transaction, input }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       toast.success('Transaksi berhasil diperbarui!');
+
+      // Check budget if it's an expense
+      if (input.type === 'expense' && input.category_id) {
+        await checkBudgetAfterTransaction(
+          input.category_id,
+          input.date,
+          profile?.currency || 'IDR'
+        );
+      }
     },
     onError: (error: Error) => {
       toast.error('Gagal memperbarui transaksi: ' + error.message);

@@ -2,6 +2,7 @@ import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { ExpensePieChart } from '@/components/dashboard/ExpensePieChart';
 import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
+import { InsightsCard } from '@/components/dashboard/InsightsCard';
 import { useTransactions, useMonthlyStats } from '@/hooks/useTransactions';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/currency';
@@ -66,7 +67,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {transactionsLoading ? (
           <>
             <Skeleton className="h-[400px]" />
@@ -85,7 +86,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Recent Transactions */}
+      {/* Insights */}
+      <InsightsCard month={currentMonth} year={currentYear} currency={currency} />
       <Card className="shadow-card">
         <CardHeader>
           <CardTitle className="text-lg">Transaksi Terbaru</CardTitle>

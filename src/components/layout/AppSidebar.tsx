@@ -29,11 +29,13 @@ import {
   User,
   LogOut,
   ChevronUp,
+  RefreshCw,
 } from 'lucide-react';
 
 const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Transaksi', url: '/transactions', icon: ArrowUpDown },
+  { title: 'Transaksi Berulang', url: '/recurring', icon: RefreshCw },
   { title: 'Kategori & Anggaran', url: '/categories', icon: Tags },
   { title: 'Laporan', url: '/reports', icon: FileText },
   { title: 'Target Keuangan', url: '/goals', icon: Target },

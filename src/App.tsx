@@ -15,6 +15,7 @@ import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Goals from "./pages/Goals";
 import Profile from "./pages/Profile";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/install" element={<Install />} />
             <Route
               element={
                 <ProtectedRoute>

@@ -45,6 +45,21 @@ function calculateNextRunDate(
   return next;
 }
 
+function formatCurrencySimple(amount: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
+const frequencyLabels: Record<string, string> = {
+  daily: "harian",
+  weekly: "mingguan",
+  monthly: "bulanan",
+  yearly: "tahunan",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -76,6 +91,9 @@ Deno.serve(async (req) => {
       errors: [] as string[],
     };
 
+    // Group notifications by user
+    const userNotifications: Record<string, { count: number; total: number; details: string[] }> = {};
+
     for (const rt of dueTransactions as RecurringTransaction[]) {
       try {
         // Create the transaction
@@ -96,6 +114,16 @@ Deno.serve(async (req) => {
         }
 
         results.created++;
+
+        // Track for notification
+        if (!userNotifications[rt.user_id]) {
+          userNotifications[rt.user_id] = { count: 0, total: 0, details: [] };
+        }
+        userNotifications[rt.user_id].count++;
+        userNotifications[rt.user_id].total += rt.amount;
+        userNotifications[rt.user_id].details.push(
+          `${rt.type === "income" ? "+" : "-"}${formatCurrencySimple(rt.amount)} (${frequencyLabels[rt.frequency] || rt.frequency})`
+        );
 
         // Calculate next run date
         const nextRunDate = calculateNextRunDate(
@@ -127,10 +155,26 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Create notifications for each user
+    for (const [userId, data] of Object.entries(userNotifications)) {
+      const { error: notifError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          title: `${data.count} Transaksi Berulang Diproses`,
+          message: `Transaksi otomatis hari ini:\n${data.details.join("\n")}`,
+          type: "recurring",
+        });
+
+      if (notifError) {
+        results.errors.push(`Failed to create notification for ${userId}: ${notifError.message}`);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Processed ${results.processed} recurring transactions, created ${results.created} transactions`,
+        message: `Processed ${results.processed} recurring transactions, created ${results.created} transactions, sent ${Object.keys(userNotifications).length} notifications`,
         results,
       }),
       {

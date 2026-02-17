@@ -1,9 +1,5 @@
 {
   "appId": "app.lovable.6c74dfdf96aa4c0bb49cc21b49a50169",
   "appName": "financee-me",
-  "webDir": "dist",
-  "server": {
-    "url": "https://6c74dfdf-96aa-4c0b-b49c-c21b49a50169.lovableproject.com?forceHideBadge=true",
-    "cleartext": true
-  }
+  "webDir": "dist"
 }

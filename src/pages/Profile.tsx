@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { User, Mail, DollarSign, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -189,6 +190,9 @@ export default function Profile() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Notification Settings */}
+      <NotificationSettings />
 
       {/* Account Stats */}
       <Card className="shadow-card">

@@ -156,6 +156,10 @@ export type Database = {
           full_name: string | null
           id: string
           monthly_income_estimate: number | null
+          notify_budget_alert: boolean
+          notify_goal_reached: boolean
+          notify_recurring: boolean
+          push_enabled: boolean
           updated_at: string
           user_id: string
         }
@@ -166,6 +170,10 @@ export type Database = {
           full_name?: string | null
           id?: string
           monthly_income_estimate?: number | null
+          notify_budget_alert?: boolean
+          notify_goal_reached?: boolean
+          notify_recurring?: boolean
+          push_enabled?: boolean
           updated_at?: string
           user_id: string
         }
@@ -176,6 +184,10 @@ export type Database = {
           full_name?: string | null
           id?: string
           monthly_income_estimate?: number | null
+          notify_budget_alert?: boolean
+          notify_goal_reached?: boolean
+          notify_recurring?: boolean
+          push_enabled?: boolean
           updated_at?: string
           user_id?: string
         }

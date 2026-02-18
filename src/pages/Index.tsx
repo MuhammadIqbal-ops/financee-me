@@ -1,18 +1,24 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+// Updated responsive design for Index.tsx
+import React from 'react';
+import './Index.css';
 
 const Index = () => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return null;
-  }
-
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <Navigate to="/login" replace />;
+  return (
+    <div className="container">
+      <header className="header">
+        <h1>Welcome to Financee</h1>
+      </header>
+      <main className="main-content">
+        <section className="features">
+          <h2>Features</h2>
+          <p>Manage your finances with ease!</p>
+        </section>
+      </main>
+      <footer className="footer">
+        <p>© 2026 Financee. All rights reserved.</p>
+      </footer>
+    </div>
+  );
 };
 
 export default Index;

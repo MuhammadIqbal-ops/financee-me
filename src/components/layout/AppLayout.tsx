@@ -4,8 +4,11 @@ import { AppSidebar } from './AppSidebar';
 import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function AppLayout() {
+  usePushNotifications();
+
   return (
     <SidebarProvider>
       <AppSidebar />

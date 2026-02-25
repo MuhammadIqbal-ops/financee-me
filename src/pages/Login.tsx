@@ -1,63 +1,75 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { toast } from 'sonner';
 
-const { width, height } = Dimensions.get('window');
+export default function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
 
-const LoginScreen = () => {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Login</Text>
-            <TextInput 
-                style={styles.input}
-                placeholder="Email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholderTextColor="#888"
-            />
-            <TextInput 
-                style={styles.input}
-                placeholder="Password"
-                secureTextEntry
-                placeholderTextColor="#888"
-            />
-            <TouchableOpacity style={styles.button}>
-                <Text style={styles.buttonText}>Log In</Text>
-            </TouchableOpacity>
-        </View>
-    );
-};
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        paddingHorizontal: width * 0.1,
-        backgroundColor: '#F5F5F5'
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20
-    },
-    input: {
-        height: 50,
-        borderColor: '#ccc',
-        borderWidth: 1,
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        marginBottom: 15
-    },
-    button: {
-        backgroundColor: '#007BFF',
-        paddingVertical: 15,
-        borderRadius: 5
-    },
-    buttonText: {
-        color: '#fff',
-        textAlign: 'center',
-        fontWeight: 'bold'
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await signIn(email, password);
+      navigate('/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || 'Login gagal');
+    } finally {
+      setLoading(false);
     }
-});
+  };
 
-export default LoginScreen;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Login</CardTitle>
+          <CardDescription>Masuk ke akun DompetPintar Anda</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="email@contoh.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Memproses...' : 'Masuk'}
+            </Button>
+          </form>
+          <p className="text-center text-sm text-muted-foreground mt-4">
+            Belum punya akun?{' '}
+            <Link to="/register" className="text-primary hover:underline">
+              Daftar
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

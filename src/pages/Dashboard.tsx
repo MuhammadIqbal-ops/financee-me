@@ -7,17 +7,17 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useTransactions, useMonthlyStats } from '@/hooks/useTransactions';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/currency';
 import { Transaction } from '@/types/database';
-import StatCard from '@/components/dashboard/StatCard';
-import ExpensePieChart from '@/components/dashboard/ExpensePieChart';
-import CashFlowChart from '@/components/dashboard/CashFlowChart';
-import InsightsCard from '@/components/dashboard/InsightsCard';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { ExpensePieChart } from '@/components/dashboard/ExpensePieChart';
+import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
+import { InsightsCard } from '@/components/dashboard/InsightsCard';
 
 export default function Dashboard() {
   const now = new Date();

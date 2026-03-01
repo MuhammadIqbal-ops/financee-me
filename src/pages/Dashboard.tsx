@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Card,
   CardContent,
@@ -8,8 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TrendingUp, TrendingDown, Wallet, Plus } from 'lucide-react';
-import { format } from 'date-fns';
+import { TrendingUp, TrendingDown, Wallet, Plus, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { format, subMonths, addMonths } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { useTransactions, useMonthlyStats } from '@/hooks/useTransactions';
 import { useProfile } from '@/hooks/useProfile';
@@ -21,6 +21,7 @@ import { CashFlowChart } from '@/components/dashboard/CashFlowChart';
 import { InsightsCard } from '@/components/dashboard/InsightsCard';
 import { BudgetSummary } from '@/components/dashboard/BudgetSummary';
 import { GoalsSummary } from '@/components/dashboard/GoalsSummary';
+import { RecurringSummary } from '@/components/dashboard/RecurringSummary';
 import { useNavigate } from 'react-router-dom';
 
 function getGreeting(): string {
@@ -34,17 +35,27 @@ function getGreeting(): string {
 export default function Dashboard() {
   const navigate = useNavigate();
   const now = new Date();
-  const currentMonth = now.getMonth() + 1;
-  const currentYear = now.getFullYear();
+
+  const [selectedDate, setSelectedDate] = useState(now);
+  const selectedMonth = selectedDate.getMonth() + 1;
+  const selectedYear = selectedDate.getFullYear();
+  const isCurrentMonth = selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear();
 
   const { data: profile } = useProfile();
-  const { data: stats, isLoading: statsLoading } = useMonthlyStats(currentMonth, currentYear);
-  const { data: transactions, isLoading: transactionsLoading } = useTransactions(currentMonth, currentYear);
+  const { data: stats, isLoading: statsLoading } = useMonthlyStats(selectedMonth, selectedYear);
+  const { data: transactions, isLoading: transactionsLoading } = useTransactions(selectedMonth, selectedYear);
 
   const currency = profile?.currency || 'IDR';
   const recentTransactions = transactions?.slice(0, 5) || [];
   const greeting = useMemo(() => getGreeting(), []);
   const displayName = profile?.full_name?.split(' ')[0] || '';
+
+  const goToPrevMonth = () => setSelectedDate((d) => subMonths(d, 1));
+  const goToNextMonth = () => {
+    const next = addMonths(selectedDate, 1);
+    if (next <= now) setSelectedDate(next);
+  };
+  const goToCurrentMonth = () => setSelectedDate(now);
 
   return (
     <ScrollArea className="h-[100dvh] w-full">
@@ -56,7 +67,7 @@ export default function Dashboard() {
               {greeting}{displayName ? `, ${displayName}` : ''}! 👋
             </h1>
             <p className="text-sm text-muted-foreground">
-              Ringkasan keuangan {format(now, 'MMMM yyyy', { locale: id })}
+              Ringkasan keuangan Anda
             </p>
           </div>
           <div className="flex gap-2">
@@ -79,6 +90,34 @@ export default function Dashboard() {
               <span className="hidden sm:inline">Pengeluaran</span>
             </Button>
           </div>
+        </div>
+
+        {/* Month Filter */}
+        <div className="flex items-center justify-center gap-2 animate-fade-in">
+          <Button variant="ghost" size="icon" onClick={goToPrevMonth} className="h-8 w-8">
+            <ChevronLeft size={18} />
+          </Button>
+          <button
+            onClick={goToCurrentMonth}
+            className="px-4 py-1.5 rounded-lg bg-muted text-foreground font-semibold text-sm hover:bg-muted/80 transition-colors min-w-[160px] text-center"
+          >
+            {format(selectedDate, 'MMMM yyyy', { locale: id })}
+          </button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToNextMonth}
+            disabled={isCurrentMonth}
+            className="h-8 w-8"
+          >
+            <ChevronRight size={18} />
+          </Button>
+          {!isCurrentMonth && (
+            <Button variant="outline" size="sm" onClick={goToCurrentMonth} className="ml-2 gap-1 text-xs">
+              <RefreshCw size={12} />
+              Hari ini
+            </Button>
+          )}
         </div>
 
         {/* Stat Cards */}
@@ -137,8 +176,8 @@ export default function Dashboard() {
                 <CardContent>
                   <CashFlowChart
                     transactions={transactions || []}
-                    month={currentMonth}
-                    year={currentYear}
+                    month={selectedMonth}
+                    year={selectedYear}
                     currency={currency}
                   />
                 </CardContent>
@@ -147,15 +186,16 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Budget & Goals */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
-          <BudgetSummary month={currentMonth} year={currentYear} currency={currency} />
+        {/* Budget, Goals & Recurring */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
+          <BudgetSummary month={selectedMonth} year={selectedYear} currency={currency} />
           <GoalsSummary currency={currency} />
+          <RecurringSummary currency={currency} />
         </div>
 
         {/* Insights */}
         <div className="animate-slide-up" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-          <InsightsCard month={currentMonth} year={currentYear} currency={currency} />
+          <InsightsCard month={selectedMonth} year={selectedYear} currency={currency} />
         </div>
 
         {/* Recent Transactions */}

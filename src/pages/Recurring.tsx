@@ -9,6 +9,7 @@ import { useProfile } from '@/hooks/useProfile';
 import {
   useRecurringTransactions,
   useCreateRecurringTransaction,
+  useUpdateRecurringTransaction,
   useToggleRecurringTransaction,
   useDeleteRecurringTransaction,
   getFrequencyLabel,
@@ -46,14 +47,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -64,7 +57,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Trash2, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Trash2, Pencil, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 
 const formSchema = z.object({
   amount: z.string().min(1, 'Nominal harus diisi'),
@@ -80,10 +73,12 @@ type FormData = z.infer<typeof formSchema>;
 
 export default function Recurring() {
   const [open, setOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<RecurringTransaction | null>(null);
   const { data: profile } = useProfile();
   const { data: categories } = useCategories();
   const { data: recurringTransactions, isLoading } = useRecurringTransactions();
   const createMutation = useCreateRecurringTransaction();
+  const updateMutation = useUpdateRecurringTransaction();
   const toggleMutation = useToggleRecurringTransaction();
   const deleteMutation = useDeleteRecurringTransaction();
 
@@ -103,17 +98,52 @@ export default function Recurring() {
   const selectedType = form.watch('type');
   const filteredCategories = categories?.filter((c) => c.type === selectedType) || [];
 
+  const openCreateDialog = () => {
+    setEditingItem(null);
+    form.reset({
+      amount: '',
+      type: 'expense',
+      category_id: '',
+      frequency: 'monthly',
+      start_date: format(new Date(), 'yyyy-MM-dd'),
+      end_date: '',
+      note: '',
+    });
+    setOpen(true);
+  };
+
+  const openEditDialog = (rt: RecurringTransaction) => {
+    setEditingItem(rt);
+    form.reset({
+      amount: String(rt.amount),
+      type: rt.type,
+      category_id: rt.category_id || '',
+      frequency: rt.frequency,
+      start_date: rt.start_date,
+      end_date: rt.end_date || '',
+      note: rt.note || '',
+    });
+    setOpen(true);
+  };
+
   const onSubmit = async (data: FormData) => {
-    await createMutation.mutateAsync({
+    const payload = {
       amount: parseFloat(data.amount),
-      type: data.type,
+      type: data.type as 'income' | 'expense',
       category_id: data.category_id,
       frequency: data.frequency as RecurrenceFrequency,
       start_date: data.start_date,
       end_date: data.end_date || null,
       note: data.note,
-    });
+    };
+
+    if (editingItem) {
+      await updateMutation.mutateAsync({ id: editingItem.id, ...payload });
+    } else {
+      await createMutation.mutateAsync(payload);
+    }
     form.reset();
+    setEditingItem(null);
     setOpen(false);
   };
 
@@ -126,6 +156,7 @@ export default function Recurring() {
   };
 
   const currency = profile?.currency || 'IDR';
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -136,18 +167,18 @@ export default function Recurring() {
             Kelola transaksi otomatis seperti gaji, tagihan, atau langganan
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingItem(null); }}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={openCreateDialog}>
               <Plus className="w-4 h-4" />
-              Tambah Transaksi Berulang
+              Tambah
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Transaksi Berulang Baru</DialogTitle>
+              <DialogTitle>{editingItem ? 'Edit Transaksi Berulang' : 'Transaksi Berulang Baru'}</DialogTitle>
               <DialogDescription>
-                Tambahkan transaksi yang akan dibuat otomatis secara berkala
+                {editingItem ? 'Ubah detail transaksi berulang' : 'Tambahkan transaksi yang akan dibuat otomatis secara berkala'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -206,11 +237,7 @@ export default function Recurring() {
                     <FormItem>
                       <FormLabel>Nominal</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          {...field}
-                        />
+                        <Input type="number" placeholder="0" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -255,7 +282,6 @@ export default function Recurring() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="end_date"
@@ -278,18 +304,15 @@ export default function Recurring() {
                     <FormItem>
                       <FormLabel>Catatan (Opsional)</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Tambahkan catatan..."
-                          {...field}
-                        />
+                        <Textarea placeholder="Tambahkan catatan..." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+                <Button type="submit" className="w-full" disabled={isPending}>
+                  {isPending ? 'Menyimpan...' : editingItem ? 'Perbarui' : 'Simpan'}
                 </Button>
               </form>
             </Form>
@@ -315,83 +338,73 @@ export default function Recurring() {
               Belum ada transaksi berulang
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead>Nominal</TableHead>
-                  <TableHead>Frekuensi</TableHead>
-                  <TableHead>Jadwal Berikutnya</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recurringTransactions?.map((rt) => (
-                  <TableRow key={rt.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {rt.type === 'income' ? (
-                          <TrendingUp className="w-4 h-4 text-income" />
-                        ) : (
-                          <TrendingDown className="w-4 h-4 text-expense" />
-                        )}
-                        <span>{rt.category?.name || 'Tanpa Kategori'}</span>
+            <div className="space-y-3">
+              {recurringTransactions?.map((rt) => (
+                <div
+                  key={rt.id}
+                  className="flex items-center justify-between rounded-lg p-3 bg-muted/50 hover:bg-muted transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {rt.type === 'income' ? (
+                      <TrendingUp className="w-5 h-5 text-[hsl(var(--income))] shrink-0" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5 text-[hsl(var(--expense))] shrink-0" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-foreground text-sm truncate">
+                          {rt.category?.name || 'Tanpa Kategori'}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {getFrequencyLabel(rt.frequency)}
+                        </Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className={rt.type === 'income' ? 'text-income' : 'text-expense'}>
-                        {rt.type === 'income' ? '+' : '-'}
-                        {formatCurrency(rt.amount, currency)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {getFrequencyLabel(rt.frequency)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="w-4 h-4" />
-                        {format(new Date(rt.next_run_date), 'd MMM yyyy', { locale: localeId })}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        <Calendar className="w-3 h-3" />
+                        <span>Berikutnya: {format(new Date(rt.next_run_date), 'd MMM yyyy', { locale: localeId })}</span>
+                        {rt.note && <span>· {rt.note}</span>}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={rt.is_active}
-                        onCheckedChange={() => handleToggle(rt.id, rt.is_active)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Hapus Transaksi Berulang?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Transaksi berulang ini akan dihapus secara permanen dan tidak akan dibuat lagi secara otomatis.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(rt.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Hapus
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                    <span className={`font-semibold text-sm ${rt.type === 'income' ? 'text-[hsl(var(--income))]' : 'text-[hsl(var(--expense))]'}`}>
+                      {rt.type === 'income' ? '+' : '-'}{formatCurrency(rt.amount, currency)}
+                    </span>
+                    <Switch
+                      checked={rt.is_active}
+                      onCheckedChange={() => handleToggle(rt.id, rt.is_active)}
+                    />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(rt)}>
+                      <Pencil className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Hapus Transaksi Berulang?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Transaksi berulang ini akan dihapus secara permanen dan tidak akan dibuat lagi secara otomatis.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batal</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(rt.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Hapus
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

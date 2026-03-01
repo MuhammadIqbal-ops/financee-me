@@ -48,58 +48,48 @@ export function ExpensePieChart({ transactions, currency = 'IDR' }: ExpensePieCh
 
   if (data.length === 0) {
     return (
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="text-lg">Pengeluaran per Kategori</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center">
-          <p className="text-muted-foreground">Belum ada data pengeluaran</p>
-        </CardContent>
-      </Card>
+      <div className="h-[300px] flex items-center justify-center">
+        <p className="text-muted-foreground">Belum ada data pengeluaran</p>
+      </div>
     );
   }
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle className="text-lg">Pengeluaran per Kategori</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip
-              formatter={(value: number) => formatCurrency(value, currency)}
-              contentStyle={{
-                backgroundColor: 'hsl(var(--popover))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-              }}
-            />
-            <Legend
-              formatter={(value, entry: any) => (
-                <span className="text-sm text-foreground">{value}</span>
-              )}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="mt-4 text-center">
-          <p className="text-sm text-muted-foreground">Total Pengeluaran</p>
-          <p className="text-xl font-bold text-foreground">{formatCurrency(total, currency)}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+            dataKey="value"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip
+            formatter={(value: number) => formatCurrency(value, currency)}
+            contentStyle={{
+              backgroundColor: 'hsl(var(--popover))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+            }}
+          />
+          <Legend
+            formatter={(value) => (
+              <span className="text-sm text-foreground">{value}</span>
+            )}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="mt-4 text-center">
+        <p className="text-sm text-muted-foreground">Total Pengeluaran</p>
+        <p className="text-xl font-bold text-foreground">{formatCurrency(total, currency)}</p>
+      </div>
+    </div>
   );
 }

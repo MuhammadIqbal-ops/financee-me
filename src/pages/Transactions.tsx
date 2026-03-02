@@ -353,12 +353,72 @@ export default function Transactions() {
                   )}
                 />
 
+                {/* Wallet selector */}
+                <FormField
+                  control={form.control}
+                  name="wallet_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dompet (opsional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih dompet" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {wallets?.map((w) => (
+                            <SelectItem key={w.id} value={w.id}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: w.color }} />
+                                {w.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Receipt upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Foto Struk (opsional)</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  {receiptPreview ? (
+                    <div className="relative w-full">
+                      <img src={receiptPreview} alt="Receipt" className="w-full max-h-40 object-cover rounded-lg border" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => { setReceiptFile(null); setReceiptPreview(null); }}
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+                      <Upload size={16} />
+                      Upload Struk
+                    </Button>
+                  )}
+                </div>
+
                 <DialogFooter>
                   <Button
                     type="submit"
-                    disabled={createTransaction.isPending || updateTransaction.isPending}
+                    disabled={createTransaction.isPending || updateTransaction.isPending || uploading}
                   >
-                    {editingTransaction ? 'Simpan' : 'Tambah'}
+                    {uploading ? 'Mengupload...' : editingTransaction ? 'Simpan' : 'Tambah'}
                   </Button>
                 </DialogFooter>
               </form>

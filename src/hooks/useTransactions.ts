@@ -11,6 +11,8 @@ export interface TransactionInput {
   category_id: string | null;
   date: string;
   note?: string;
+  wallet_id?: string | null;
+  receipt_url?: string | null;
 }
 
 export function useTransactions(month?: number, year?: number) {
@@ -63,6 +65,7 @@ export function useCreateTransaction() {
     onSuccess: async ({ transaction, input }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil ditambahkan!');
 
       // Check budget if it's an expense
@@ -99,6 +102,7 @@ export function useUpdateTransaction() {
     onSuccess: async ({ transaction, input }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil diperbarui!');
 
       // Check budget if it's an expense
@@ -131,6 +135,7 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil dihapus!');
     },
     onError: (error: Error) => {

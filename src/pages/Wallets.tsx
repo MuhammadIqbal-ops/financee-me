@@ -54,9 +54,9 @@ export default function Wallets() {
 
   const onSubmit = async (data: WalletFormData) => {
     if (editing) {
-      await updateWallet.mutateAsync({ id: editing.id, ...data });
+      await updateWallet.mutateAsync({ id: editing.id, name: data.name, color: data.color, initial_balance: data.initial_balance });
     } else {
-      await createWallet.mutateAsync(data);
+      await createWallet.mutateAsync({ name: data.name, color: data.color, initial_balance: data.initial_balance });
     }
     setIsOpen(false);
   };

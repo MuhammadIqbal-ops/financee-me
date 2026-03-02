@@ -496,12 +496,12 @@ export default function Transactions() {
                       </p>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
                     {(transaction as any).receipt_url && (
                       <a href={(transaction as any).receipt_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                         <Image size={16} />
                       </a>
                     )}
-                    <div className="flex items-center gap-2">
                     <p
                       className={`font-semibold ${
                         transaction.type === 'income' ? 'text-income' : 'text-expense'

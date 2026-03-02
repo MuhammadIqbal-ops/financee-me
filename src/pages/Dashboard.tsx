@@ -22,6 +22,8 @@ import { InsightsCard } from '@/components/dashboard/InsightsCard';
 import { BudgetSummary } from '@/components/dashboard/BudgetSummary';
 import { GoalsSummary } from '@/components/dashboard/GoalsSummary';
 import { RecurringSummary } from '@/components/dashboard/RecurringSummary';
+import { WalletSummary } from '@/components/dashboard/WalletSummary';
+import { DebtSummary } from '@/components/dashboard/DebtSummary';
 import { useNavigate } from 'react-router-dom';
 
 function getGreeting(): string {
@@ -186,11 +188,13 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Budget, Goals & Recurring */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
+        {/* Budget, Goals, Recurring, Wallets, Debts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
           <BudgetSummary month={selectedMonth} year={selectedYear} currency={currency} />
           <GoalsSummary currency={currency} />
           <RecurringSummary currency={currency} />
+          <WalletSummary currency={currency} />
+          <DebtSummary currency={currency} />
         </div>
 
         {/* Insights */}

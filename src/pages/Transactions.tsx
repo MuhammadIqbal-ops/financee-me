@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter } from 'lucide-react';
+import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,9 +49,11 @@ import {
 import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
 import { useProfile } from '@/hooks/useProfile';
+import { useWallets } from '@/hooks/useWallets';
 import { formatCurrency } from '@/lib/currency';
 import { Transaction, TransactionType } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 const transactionSchema = z.object({
   amount: z.number().positive('Jumlah harus lebih dari 0'),
@@ -59,6 +61,7 @@ const transactionSchema = z.object({
   category_id: z.string().min(1, 'Pilih kategori'),
   date: z.date(),
   note: z.string().optional(),
+  wallet_id: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -69,10 +72,14 @@ export default function Transactions() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
-
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: transactions, isLoading } = useTransactions();
   const { data: categories } = useCategories();
   const { data: profile } = useProfile();
+  const { data: wallets } = useWallets();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
@@ -87,6 +94,7 @@ export default function Transactions() {
       category_id: '',
       date: new Date(),
       note: '',
+      wallet_id: '',
     },
   });
 
@@ -110,7 +118,9 @@ export default function Transactions() {
         category_id: transaction.category_id || '',
         date: new Date(transaction.date),
         note: transaction.note || '',
+        wallet_id: (transaction as any).wallet_id || '',
       });
+      setReceiptPreview((transaction as any).receipt_url || null);
     } else {
       setEditingTransaction(null);
       form.reset({
@@ -119,27 +129,60 @@ export default function Transactions() {
         category_id: '',
         date: new Date(),
         note: '',
+        wallet_id: wallets?.[0]?.id || '',
       });
+      setReceiptPreview(null);
     }
     setIsDialogOpen(true);
   };
 
-  const onSubmit = async (data: TransactionFormData) => {
-    const formData = {
-      amount: data.amount,
-      type: data.type,
-      category_id: data.category_id,
-      date: format(data.date, 'yyyy-MM-dd'),
-      note: data.note,
-    };
-
-    if (editingTransaction) {
-      await updateTransaction.mutateAsync({ id: editingTransaction.id, ...formData });
-    } else {
-      await createTransaction.mutateAsync(formData);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setReceiptFile(file);
+      setReceiptPreview(URL.createObjectURL(file));
     }
-    setIsDialogOpen(false);
-    form.reset();
+  };
+
+  const uploadReceipt = async (file: File): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from('receipts').upload(path, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from('receipts').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const onSubmit = async (data: TransactionFormData) => {
+    setUploading(true);
+    try {
+      let receipt_url: string | null | undefined = receiptPreview;
+      if (receiptFile) {
+        receipt_url = await uploadReceipt(receiptFile);
+      }
+
+      const formData = {
+        amount: data.amount,
+        type: data.type,
+        category_id: data.category_id,
+        date: format(data.date, 'yyyy-MM-dd'),
+        note: data.note,
+        wallet_id: data.wallet_id || null,
+        receipt_url: receipt_url || null,
+      };
+
+      if (editingTransaction) {
+        await updateTransaction.mutateAsync({ id: editingTransaction.id, ...formData });
+      } else {
+        await createTransaction.mutateAsync(formData);
+      }
+      setIsDialogOpen(false);
+      form.reset();
+      setReceiptFile(null);
+      setReceiptPreview(null);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -310,12 +353,72 @@ export default function Transactions() {
                   )}
                 />
 
+                {/* Wallet selector */}
+                <FormField
+                  control={form.control}
+                  name="wallet_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dompet (opsional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih dompet" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {wallets?.map((w) => (
+                            <SelectItem key={w.id} value={w.id}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: w.color }} />
+                                {w.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Receipt upload */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Foto Struk (opsional)</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  {receiptPreview ? (
+                    <div className="relative w-full">
+                      <img src={receiptPreview} alt="Receipt" className="w-full max-h-40 object-cover rounded-lg border" />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => { setReceiptFile(null); setReceiptPreview(null); }}
+                      >
+                        <X size={12} />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button type="button" variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+                      <Upload size={16} />
+                      Upload Struk
+                    </Button>
+                  )}
+                </div>
+
                 <DialogFooter>
                   <Button
                     type="submit"
-                    disabled={createTransaction.isPending || updateTransaction.isPending}
+                    disabled={createTransaction.isPending || updateTransaction.isPending || uploading}
                   >
-                    {editingTransaction ? 'Simpan' : 'Tambah'}
+                    {uploading ? 'Mengupload...' : editingTransaction ? 'Simpan' : 'Tambah'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -394,6 +497,11 @@ export default function Transactions() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {(transaction as any).receipt_url && (
+                      <a href={(transaction as any).receipt_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <Image size={16} />
+                      </a>
+                    )}
                     <p
                       className={`font-semibold ${
                         transaction.type === 'income' ? 'text-income' : 'text-expense'

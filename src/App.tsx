@@ -20,6 +20,9 @@ import Reports from "./pages/Reports";
 import Goals from "./pages/Goals";
 import Profile from "./pages/Profile";
 import Recurring from "./pages/Recurring";
+import Wallets from "./pages/Wallets";
+import Debts from "./pages/Debts";
+import AIAdvisor from "./pages/AIAdvisor";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +62,9 @@ const App = () => {
               <Route path="/goals" element={<Goals />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/recurring" element={<Recurring />} />
+              <Route path="/wallets" element={<Wallets />} />
+              <Route path="/debts" element={<Debts />} />
+              <Route path="/ai-advisor" element={<AIAdvisor />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

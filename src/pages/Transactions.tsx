@@ -133,17 +133,6 @@ export default function Transactions() {
       });
       setReceiptPreview(null);
     }
-    setReceiptFile(null);
-    } else {
-      setEditingTransaction(null);
-      form.reset({
-        amount: 0,
-        type: 'expense',
-        category_id: '',
-        date: new Date(),
-        note: '',
-      });
-    }
     setIsDialogOpen(true);
   };
 

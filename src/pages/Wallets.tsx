@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Wallet as WalletIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wallet as WalletIcon, ArrowRightLeft } from 'lucide-react';
+import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { useWalletBalances, useCreateWallet, useUpdateWallet, useDeleteWallet, Wallet } from '@/hooks/useWallets';
+import { useWalletTransfers, useCreateTransfer } from '@/hooks/useWalletTransfers';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/currency';
 
@@ -20,25 +24,41 @@ const walletSchema = z.object({
   initial_balance: z.number().min(0, 'Saldo awal minimal 0'),
 });
 
+const transferSchema = z.object({
+  from_wallet_id: z.string().min(1, 'Pilih dompet asal'),
+  to_wallet_id: z.string().min(1, 'Pilih dompet tujuan'),
+  amount: z.number().min(1, 'Jumlah minimal 1'),
+  note: z.string().optional(),
+});
+
 type WalletFormData = z.infer<typeof walletSchema>;
+type TransferFormData = z.infer<typeof transferSchema>;
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
 export default function Wallets() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [editing, setEditing] = useState<(Wallet & { balance: number }) | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const { data: wallets, isLoading } = useWalletBalances();
+  const { data: transfers } = useWalletTransfers();
   const { data: profile } = useProfile();
   const createWallet = useCreateWallet();
   const updateWallet = useUpdateWallet();
   const deleteWallet = useDeleteWallet();
+  const createTransfer = useCreateTransfer();
   const currency = profile?.currency || 'IDR';
 
   const form = useForm<WalletFormData>({
     resolver: zodResolver(walletSchema),
     defaultValues: { name: '', color: '#3b82f6', initial_balance: 0 },
+  });
+
+  const transferForm = useForm<TransferFormData>({
+    resolver: zodResolver(transferSchema),
+    defaultValues: { from_wallet_id: '', to_wallet_id: '', amount: 0, note: '' },
   });
 
   const openDialog = (wallet?: Wallet & { balance: number }) => {
@@ -61,7 +81,24 @@ export default function Wallets() {
     setIsOpen(false);
   };
 
+  const onTransferSubmit = async (data: TransferFormData) => {
+    if (data.from_wallet_id === data.to_wallet_id) {
+      transferForm.setError('to_wallet_id', { message: 'Dompet tujuan harus berbeda' });
+      return;
+    }
+    await createTransfer.mutateAsync({
+      from_wallet_id: data.from_wallet_id,
+      to_wallet_id: data.to_wallet_id,
+      amount: data.amount,
+      note: data.note,
+    });
+    setIsTransferOpen(false);
+    transferForm.reset();
+  };
+
   const totalBalance = wallets?.reduce((sum, w) => sum + w.balance, 0) || 0;
+
+  const getWalletName = (id: string) => wallets?.find(w => w.id === id)?.name || '?';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -70,58 +107,124 @@ export default function Wallets() {
           <h1 className="text-2xl font-bold text-foreground">Dompet</h1>
           <p className="text-muted-foreground">Kelola akun keuangan Anda</p>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openDialog()}><Plus className="w-4 h-4 mr-2" />Tambah Dompet</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editing ? 'Edit Dompet' : 'Tambah Dompet'}</DialogTitle>
-              <DialogDescription>Atur nama dan saldo awal dompet</DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nama</FormLabel>
-                    <FormControl><Input placeholder="Contoh: Bank BCA" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="initial_balance" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Saldo Awal</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="color" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Warna</FormLabel>
-                    <div className="flex gap-2 flex-wrap">
-                      {COLORS.map(c => (
-                        <button key={c} type="button"
-                          className={`w-8 h-8 rounded-full border-2 transition-all ${field.value === c ? 'border-foreground scale-110' : 'border-transparent'}`}
-                          style={{ backgroundColor: c }}
-                          onClick={() => field.onChange(c)}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <DialogFooter>
-                  <Button type="submit" disabled={createWallet.isPending || updateWallet.isPending}>
-                    {editing ? 'Simpan' : 'Tambah'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => { transferForm.reset(); setIsTransferOpen(true); }}>
+            <ArrowRightLeft className="w-4 h-4 mr-2" />Transfer
+          </Button>
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => openDialog()}><Plus className="w-4 h-4 mr-2" />Tambah Dompet</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editing ? 'Edit Dompet' : 'Tambah Dompet'}</DialogTitle>
+                <DialogDescription>Atur nama dan saldo awal dompet</DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField control={form.control} name="name" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama</FormLabel>
+                      <FormControl><Input placeholder="Contoh: Bank BCA" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="initial_balance" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Saldo Awal</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="color" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Warna</FormLabel>
+                      <div className="flex gap-2 flex-wrap">
+                        {COLORS.map(c => (
+                          <button key={c} type="button"
+                            className={`w-8 h-8 rounded-full border-2 transition-all ${field.value === c ? 'border-foreground scale-110' : 'border-transparent'}`}
+                            style={{ backgroundColor: c }}
+                            onClick={() => field.onChange(c)}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <DialogFooter>
+                    <Button type="submit" disabled={createWallet.isPending || updateWallet.isPending}>
+                      {editing ? 'Simpan' : 'Tambah'}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Transfer Dialog */}
+      <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer Antar Dompet</DialogTitle>
+            <DialogDescription>Pindahkan saldo dari satu dompet ke dompet lain</DialogDescription>
+          </DialogHeader>
+          <Form {...transferForm}>
+            <form onSubmit={transferForm.handleSubmit(onTransferSubmit)} className="space-y-4">
+              <FormField control={transferForm.control} name="from_wallet_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dari Dompet</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Pilih dompet asal" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {wallets?.map(w => (
+                        <SelectItem key={w.id} value={w.id}>{w.name} ({formatCurrency(w.balance, currency)})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={transferForm.control} name="to_wallet_id" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ke Dompet</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Pilih dompet tujuan" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {wallets?.map(w => (
+                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={transferForm.control} name="amount" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Jumlah</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={transferForm.control} name="note" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Catatan (opsional)</FormLabel>
+                  <FormControl><Input placeholder="Misal: Top up GoPay" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <DialogFooter>
+                <Button type="submit" disabled={createTransfer.isPending}>Transfer</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Total */}
       <Card className="shadow-card bg-primary/5 border-primary/20">
@@ -177,6 +280,35 @@ export default function Wallets() {
           ))
         )}
       </div>
+
+      {/* Transfer History */}
+      {transfers && transfers.length > 0 && (
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5" /> Riwayat Transfer
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {transfers.map(tr => (
+                <div key={tr.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                  <div>
+                    <p className="font-medium text-sm text-foreground">
+                      {getWalletName(tr.from_wallet_id)} → {getWalletName(tr.to_wallet_id)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(tr.date), 'd MMM yyyy', { locale: idLocale })}
+                      {tr.note && ` • ${tr.note}`}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-primary">{formatCurrency(Number(tr.amount), currency)}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

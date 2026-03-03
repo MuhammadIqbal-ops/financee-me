@@ -194,6 +194,7 @@ export type Database = {
         Row: {
           created_at: string
           currency: string | null
+          dashboard_layout: Json | null
           email: string | null
           full_name: string | null
           id: string
@@ -208,6 +209,7 @@ export type Database = {
         Insert: {
           created_at?: string
           currency?: string | null
+          dashboard_layout?: Json | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -222,6 +224,7 @@ export type Database = {
         Update: {
           created_at?: string
           currency?: string | null
+          dashboard_layout?: Json | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -365,6 +368,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wallet_transfers: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          from_wallet_id: string
+          id: string
+          note: string | null
+          to_wallet_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string
+          from_wallet_id: string
+          id?: string
+          note?: string | null
+          to_wallet_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          from_wallet_id?: string
+          id?: string
+          note?: string | null
+          to_wallet_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transfers_from_wallet_id_fkey"
+            columns: ["from_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wallet_transfers_to_wallet_id_fkey"
+            columns: ["to_wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallets: {
         Row: {

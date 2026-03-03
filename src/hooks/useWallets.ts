@@ -44,24 +44,34 @@ export function useWalletBalances() {
   return useQuery({
     queryKey: ['walletBalances', user?.id],
     queryFn: async () => {
-      // Get all wallets
       const { data: wallets, error: wErr } = await supabase
         .from('wallets')
         .select('*')
         .order('is_default', { ascending: false });
       if (wErr) throw wErr;
 
-      // Get all transactions grouped by wallet
       const { data: transactions, error: tErr } = await supabase
         .from('transactions')
         .select('wallet_id, amount, type');
       if (tErr) throw tErr;
 
+      const { data: transfers, error: trErr } = await supabase
+        .from('wallet_transfers')
+        .select('from_wallet_id, to_wallet_id, amount');
+      if (trErr) throw trErr;
+
       return (wallets as Wallet[]).map((w) => {
         const walletTxns = (transactions || []).filter((t: any) => t.wallet_id === w.id);
-        const balance = walletTxns.reduce((acc: number, t: any) => {
+        let balance = walletTxns.reduce((acc: number, t: any) => {
           return acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount));
         }, w.initial_balance);
+
+        // Add transfers in/out
+        (transfers || []).forEach((tr: any) => {
+          if (tr.from_wallet_id === w.id) balance -= Number(tr.amount);
+          if (tr.to_wallet_id === w.id) balance += Number(tr.amount);
+        });
+
         return { ...w, balance };
       });
     },

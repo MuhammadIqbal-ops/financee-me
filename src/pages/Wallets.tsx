@@ -86,7 +86,12 @@ export default function Wallets() {
       transferForm.setError('to_wallet_id', { message: 'Dompet tujuan harus berbeda' });
       return;
     }
-    await createTransfer.mutateAsync(data);
+    await createTransfer.mutateAsync({
+      from_wallet_id: data.from_wallet_id,
+      to_wallet_id: data.to_wallet_id,
+      amount: data.amount,
+      note: data.note,
+    });
     setIsTransferOpen(false);
     transferForm.reset();
   };

@@ -79,8 +79,9 @@ export default function Dashboard() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">
               {greeting}{displayName ? `, ${displayName}` : ''}! 👋
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
               Ringkasan keuangan Anda
+              <DashboardSettings />
             </p>
           </div>
           <div className="flex gap-2">
@@ -201,11 +202,10 @@ export default function Dashboard() {
 
         {/* Budget, Goals, Recurring, Wallets, Debts */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
-          <BudgetSummary month={selectedMonth} year={selectedYear} currency={currency} />
-          <GoalsSummary currency={currency} />
-          <RecurringSummary currency={currency} />
-          <WalletSummary currency={currency} />
-          <DebtSummary currency={currency} />
+          {dashboardLayout.widgets
+            .filter(key => dashboardLayout.visible[key])
+            .map(key => WIDGET_MAP[key])
+          }
         </div>
 
         {/* Insights */}

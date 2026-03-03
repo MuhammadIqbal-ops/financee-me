@@ -24,6 +24,8 @@ import { GoalsSummary } from '@/components/dashboard/GoalsSummary';
 import { RecurringSummary } from '@/components/dashboard/RecurringSummary';
 import { WalletSummary } from '@/components/dashboard/WalletSummary';
 import { DebtSummary } from '@/components/dashboard/DebtSummary';
+import { DashboardSettings } from '@/components/dashboard/DashboardSettings';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useNavigate } from 'react-router-dom';
 
 function getGreeting(): string {
@@ -46,11 +48,20 @@ export default function Dashboard() {
   const { data: profile } = useProfile();
   const { data: stats, isLoading: statsLoading } = useMonthlyStats(selectedMonth, selectedYear);
   const { data: transactions, isLoading: transactionsLoading } = useTransactions(selectedMonth, selectedYear);
+  const dashboardLayout = useDashboardLayout();
 
   const currency = profile?.currency || 'IDR';
   const recentTransactions = transactions?.slice(0, 5) || [];
   const greeting = useMemo(() => getGreeting(), []);
   const displayName = profile?.full_name?.split(' ')[0] || '';
+
+  const WIDGET_MAP: Record<string, React.ReactNode> = {
+    budget: <BudgetSummary key="budget" month={selectedMonth} year={selectedYear} currency={currency} />,
+    goals: <GoalsSummary key="goals" currency={currency} />,
+    recurring: <RecurringSummary key="recurring" currency={currency} />,
+    wallets: <WalletSummary key="wallets" currency={currency} />,
+    debts: <DebtSummary key="debts" currency={currency} />,
+  };
 
   const goToPrevMonth = () => setSelectedDate((d) => subMonths(d, 1));
   const goToNextMonth = () => {

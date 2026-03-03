@@ -7,6 +7,7 @@ export interface Profile {
   email: string | null;
   currency: string;
   monthly_income_estimate: number;
+  dashboard_layout: any;
   created_at: string;
   updated_at: string;
 }

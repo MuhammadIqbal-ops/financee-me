@@ -88,6 +88,7 @@ export function useCreateTransaction() {
 
 export function useUpdateTransaction() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const { data: profile } = useProfile();
 
   return useMutation({

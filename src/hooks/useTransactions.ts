@@ -156,15 +156,29 @@ export function useMonthlyStats(month: number, year: number) {
 
       const { data, error } = await supabase
         .from('transactions')
-        .select('amount, type')
+        .select('amount, type, currency')
         .gte('date', startDate)
         .lte('date', endDate);
 
       if (error) throw error;
 
+      // Get exchange rates for conversion
+      const { data: rates } = await supabase
+        .from('exchange_rates')
+        .select('*');
+
+      const userCurrency = (await supabase.from('profiles').select('currency').eq('user_id', user!.id).single()).data?.currency || 'IDR';
+
       const stats = (data || []).reduce(
         (acc, t) => {
-          const amount = Number(t.amount);
+          let amount = Number(t.amount);
+          // Convert if different currency
+          if (t.currency && t.currency !== userCurrency && rates) {
+            const rate = rates.find(
+              (r: any) => r.base_currency === t.currency && r.target_currency === userCurrency
+            );
+            if (rate) amount = amount * Number(rate.rate);
+          }
           if (t.type === 'income') {
             acc.totalIncome += amount;
           } else {

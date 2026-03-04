@@ -87,6 +87,7 @@ export default function Transactions() {
   const deleteTransaction = useDeleteTransaction();
 
   const currency = profile?.currency || 'IDR';
+  const { data: exchangeRates } = useExchangeRates(currency);
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -97,6 +98,7 @@ export default function Transactions() {
       date: new Date(),
       note: '',
       wallet_id: '',
+      currency: '',
     },
   });
 
@@ -121,6 +123,7 @@ export default function Transactions() {
         date: new Date(transaction.date),
         note: transaction.note || '',
         wallet_id: (transaction as any).wallet_id || '',
+        currency: transaction.currency || '',
       });
       setReceiptPreview((transaction as any).receipt_url || null);
     } else {
@@ -132,6 +135,7 @@ export default function Transactions() {
         date: new Date(),
         note: '',
         wallet_id: wallets?.[0]?.id || '',
+        currency: '',
       });
       setReceiptPreview(null);
     }

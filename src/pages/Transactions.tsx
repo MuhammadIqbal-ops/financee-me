@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X } from 'lucide-react';
+import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +54,7 @@ import { formatCurrency } from '@/lib/currency';
 import { Transaction, TransactionType } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
 
 const transactionSchema = z.object({
   amount: z.number().positive('Jumlah harus lebih dari 0'),
@@ -62,6 +63,7 @@ const transactionSchema = z.object({
   date: z.date(),
   note: z.string().optional(),
   wallet_id: z.string().optional(),
+  currency: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;

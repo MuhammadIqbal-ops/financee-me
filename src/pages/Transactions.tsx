@@ -175,6 +175,7 @@ export default function Transactions() {
         note: data.note,
         wallet_id: data.wallet_id || null,
         receipt_url: receipt_url || null,
+        currency: data.currency || null,
       };
 
       if (editingTransaction) {

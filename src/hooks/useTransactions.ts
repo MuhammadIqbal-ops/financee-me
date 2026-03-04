@@ -127,6 +127,7 @@ export function useUpdateTransaction() {
 
 export function useDeleteTransaction() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {

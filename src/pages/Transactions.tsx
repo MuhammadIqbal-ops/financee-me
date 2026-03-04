@@ -539,14 +539,24 @@ export default function Transactions() {
                         <Image size={16} />
                       </a>
                     )}
-                    <p
-                      className={`font-semibold ${
-                        transaction.type === 'income' ? 'text-income' : 'text-expense'
-                      }`}
-                    >
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(Number(transaction.amount), currency)}
-                    </p>
+                    <div className="text-right">
+                      <p
+                        className={`font-semibold ${
+                          transaction.type === 'income' ? 'text-income' : 'text-expense'
+                        }`}
+                      >
+                        {transaction.type === 'income' ? '+' : '-'}
+                        {formatCurrency(Number(transaction.amount), transaction.currency || currency)}
+                      </p>
+                      {transaction.currency && transaction.currency !== currency && exchangeRates && (
+                        <p className="text-xs text-muted-foreground">
+                          ≈ {formatCurrency(
+                            convertAmount(Number(transaction.amount), transaction.currency, currency, exchangeRates),
+                            currency
+                          )}
+                        </p>
+                      )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"

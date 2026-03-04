@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { logUserActivity } from '@/lib/activityLogger';
 
 export interface Wallet {
   id: string;
@@ -27,11 +28,7 @@ export function useWallets() {
   return useQuery({
     queryKey: ['wallets', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('wallets')
-        .select('*')
-        .order('is_default', { ascending: false })
-        .order('name');
+      const { data, error } = await supabase.from('wallets').select('*').order('is_default', { ascending: false }).order('name');
       if (error) throw error;
       return data as Wallet[];
     },
@@ -44,20 +41,11 @@ export function useWalletBalances() {
   return useQuery({
     queryKey: ['walletBalances', user?.id],
     queryFn: async () => {
-      const { data: wallets, error: wErr } = await supabase
-        .from('wallets')
-        .select('*')
-        .order('is_default', { ascending: false });
+      const { data: wallets, error: wErr } = await supabase.from('wallets').select('*').order('is_default', { ascending: false });
       if (wErr) throw wErr;
-
-      const { data: transactions, error: tErr } = await supabase
-        .from('transactions')
-        .select('wallet_id, amount, type');
+      const { data: transactions, error: tErr } = await supabase.from('transactions').select('wallet_id, amount, type');
       if (tErr) throw tErr;
-
-      const { data: transfers, error: trErr } = await supabase
-        .from('wallet_transfers')
-        .select('from_wallet_id, to_wallet_id, amount');
+      const { data: transfers, error: trErr } = await supabase.from('wallet_transfers').select('from_wallet_id, to_wallet_id, amount');
       if (trErr) throw trErr;
 
       return (wallets as Wallet[]).map((w) => {
@@ -65,13 +53,10 @@ export function useWalletBalances() {
         let balance = walletTxns.reduce((acc: number, t: any) => {
           return acc + (t.type === 'income' ? Number(t.amount) : -Number(t.amount));
         }, w.initial_balance);
-
-        // Add transfers in/out
         (transfers || []).forEach((tr: any) => {
           if (tr.from_wallet_id === w.id) balance -= Number(tr.amount);
           if (tr.to_wallet_id === w.id) balance += Number(tr.amount);
         });
-
         return { ...w, balance };
       });
     },
@@ -84,18 +69,15 @@ export function useCreateWallet() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (input: WalletInput) => {
-      const { data, error } = await supabase
-        .from('wallets')
-        .insert({ user_id: user!.id, ...input })
-        .select()
-        .single();
+      const { data, error } = await supabase.from('wallets').insert({ user_id: user!.id, ...input }).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Dompet berhasil ditambahkan!');
+      logUserActivity(user!.id, 'create', 'wallet', data.id, { name: data.name });
     },
     onError: (e: Error) => toast.error('Gagal menambahkan dompet: ' + e.message),
   });
@@ -103,21 +85,18 @@ export function useCreateWallet() {
 
 export function useUpdateWallet() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async ({ id, ...input }: WalletInput & { id: string }) => {
-      const { data, error } = await supabase
-        .from('wallets')
-        .update(input)
-        .eq('id', id)
-        .select()
-        .single();
+      const { data, error } = await supabase.from('wallets').update(input).eq('id', id).select().single();
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Dompet berhasil diperbarui!');
+      logUserActivity(user!.id, 'update', 'wallet', data.id, { name: data.name });
     },
     onError: (e: Error) => toast.error('Gagal memperbarui dompet: ' + e.message),
   });
@@ -125,15 +104,18 @@ export function useUpdateWallet() {
 
 export function useDeleteWallet() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('wallets').delete().eq('id', id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => {
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['wallets'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Dompet berhasil dihapus!');
+      logUserActivity(user!.id, 'delete', 'wallet', id);
     },
     onError: (e: Error) => toast.error('Gagal menghapus dompet: ' + e.message),
   });

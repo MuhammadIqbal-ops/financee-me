@@ -23,6 +23,7 @@ import Recurring from "./pages/Recurring";
 import Wallets from "./pages/Wallets";
 import Debts from "./pages/Debts";
 import AIAdvisor from "./pages/AIAdvisor";
+import ActivityLogs from "./pages/ActivityLogs";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,7 @@ const App = () => {
               <Route path="/wallets" element={<Wallets />} />
               <Route path="/debts" element={<Debts />} />
               <Route path="/ai-advisor" element={<AIAdvisor />} />
+              <Route path="/activity-logs" element={<ActivityLogs />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

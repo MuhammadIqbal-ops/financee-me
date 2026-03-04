@@ -273,6 +273,36 @@ export default function Transactions() {
                   )}
                 />
 
+                {/* Currency selector */}
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mata Uang</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <Globe className="w-4 h-4 mr-2" />
+                            <SelectValue placeholder={`${currency} (default)`} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">
+                            {currency} (default)
+                          </SelectItem>
+                          {SUPPORTED_CURRENCIES.filter(c => c.code !== currency).map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {c.symbol} {c.code} - {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="category_id"

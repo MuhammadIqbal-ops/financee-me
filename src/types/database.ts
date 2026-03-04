@@ -42,6 +42,7 @@ export interface Transaction {
   type: TransactionType;
   date: string;
   note: string | null;
+  currency: string | null;
   created_at: string;
   updated_at: string;
   category?: Category;

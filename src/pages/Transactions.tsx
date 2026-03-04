@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X } from 'lucide-react';
+import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +54,7 @@ import { formatCurrency } from '@/lib/currency';
 import { Transaction, TransactionType } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
 
 const transactionSchema = z.object({
   amount: z.number().positive('Jumlah harus lebih dari 0'),
@@ -62,6 +63,7 @@ const transactionSchema = z.object({
   date: z.date(),
   note: z.string().optional(),
   wallet_id: z.string().optional(),
+  currency: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -85,6 +87,7 @@ export default function Transactions() {
   const deleteTransaction = useDeleteTransaction();
 
   const currency = profile?.currency || 'IDR';
+  const { data: exchangeRates } = useExchangeRates(currency);
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -95,6 +98,7 @@ export default function Transactions() {
       date: new Date(),
       note: '',
       wallet_id: '',
+      currency: '',
     },
   });
 
@@ -119,6 +123,7 @@ export default function Transactions() {
         date: new Date(transaction.date),
         note: transaction.note || '',
         wallet_id: (transaction as any).wallet_id || '',
+        currency: transaction.currency || '',
       });
       setReceiptPreview((transaction as any).receipt_url || null);
     } else {
@@ -130,6 +135,7 @@ export default function Transactions() {
         date: new Date(),
         note: '',
         wallet_id: wallets?.[0]?.id || '',
+        currency: '',
       });
       setReceiptPreview(null);
     }
@@ -169,6 +175,7 @@ export default function Transactions() {
         note: data.note,
         wallet_id: data.wallet_id || null,
         receipt_url: receipt_url || null,
+        currency: data.currency || null,
       };
 
       if (editingTransaction) {
@@ -261,6 +268,36 @@ export default function Transactions() {
                           onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Currency selector */}
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mata Uang</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <Globe className="w-4 h-4 mr-2" />
+                            <SelectValue placeholder={`${currency} (default)`} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">
+                            {currency} (default)
+                          </SelectItem>
+                          {SUPPORTED_CURRENCIES.filter(c => c.code !== currency).map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              {c.symbol} {c.code} - {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -502,14 +539,24 @@ export default function Transactions() {
                         <Image size={16} />
                       </a>
                     )}
-                    <p
-                      className={`font-semibold ${
-                        transaction.type === 'income' ? 'text-income' : 'text-expense'
-                      }`}
-                    >
-                      {transaction.type === 'income' ? '+' : '-'}
-                      {formatCurrency(Number(transaction.amount), currency)}
-                    </p>
+                    <div className="text-right">
+                      <p
+                        className={`font-semibold ${
+                          transaction.type === 'income' ? 'text-income' : 'text-expense'
+                        }`}
+                      >
+                        {transaction.type === 'income' ? '+' : '-'}
+                        {formatCurrency(Number(transaction.amount), transaction.currency || currency)}
+                      </p>
+                      {transaction.currency && transaction.currency !== currency && exchangeRates && (
+                        <p className="text-xs text-muted-foreground">
+                          ≈ {formatCurrency(
+                            convertAmount(Number(transaction.amount), transaction.currency, currency, exchangeRates),
+                            currency
+                          )}
+                        </p>
+                      )}
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"

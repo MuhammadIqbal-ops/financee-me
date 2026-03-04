@@ -32,6 +32,7 @@ import {
   RefreshCw,
   CreditCard,
   Sparkles,
+  ClipboardList,
 } from 'lucide-react';
 
 const menuItems = [
@@ -44,6 +45,7 @@ const menuItems = [
   { title: 'Laporan', url: '/reports', icon: FileText },
   { title: 'Target Keuangan', url: '/goals', icon: Target },
   { title: 'Asisten AI', url: '/ai-advisor', icon: Sparkles },
+  { title: 'Log Aktivitas', url: '/activity-logs', icon: ClipboardList },
   { title: 'Profil', url: '/profile', icon: User },
 ];
 

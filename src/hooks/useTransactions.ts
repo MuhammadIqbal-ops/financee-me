@@ -5,6 +5,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Transaction, TransactionType } from '@/types/database';
 import { toast } from 'sonner';
 import { checkBudgetAfterTransaction } from '@/hooks/useBudgetCheck';
+import { logUserActivity } from '@/lib/activityLogger';
 export interface TransactionInput {
   amount: number;
   type: TransactionType;
@@ -68,6 +69,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil ditambahkan!');
+      logUserActivity(user!.id, 'create', 'transaction', transaction.id, { type: input.type, amount: input.amount, note: input.note });
 
       // Check budget if it's an expense
       if (input.type === 'expense' && input.category_id) {
@@ -105,6 +107,7 @@ export function useUpdateTransaction() {
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil diperbarui!');
+      logUserActivity(user!.id, 'update', 'transaction', transaction.id, { type: input.type, amount: input.amount });
 
       // Check budget if it's an expense
       if (input.type === 'expense' && input.category_id) {
@@ -133,11 +136,12 @@ export function useDeleteTransaction() {
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil dihapus!');
+      logUserActivity(user!.id, 'delete', 'transaction', id);
     },
     onError: (error: Error) => {
       toast.error('Gagal menghapus transaksi: ' + error.message);

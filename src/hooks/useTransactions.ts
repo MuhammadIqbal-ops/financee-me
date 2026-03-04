@@ -13,6 +13,7 @@ export interface TransactionInput {
   note?: string;
   wallet_id?: string | null;
   receipt_url?: string | null;
+  currency?: string | null;
 }
 
 export function useTransactions(month?: number, year?: number) {

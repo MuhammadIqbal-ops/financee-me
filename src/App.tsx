@@ -26,6 +26,7 @@ import AIAdvisor from "./pages/AIAdvisor";
 import ActivityLogs from "./pages/ActivityLogs";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
+import { InstallBanner } from "./components/InstallBanner";
 
 const queryClient = new QueryClient();
 

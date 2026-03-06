@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X, Globe } from 'lucide-react';
+import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X, Globe, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +54,7 @@ import { formatCurrency } from '@/lib/currency';
 import { Transaction, TransactionType } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { exportTransactionsCsv } from '@/lib/exportCsv';
 import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
 
 const transactionSchema = z.object({
@@ -206,13 +207,22 @@ export default function Transactions() {
           <h1 className="text-2xl font-bold text-foreground">Transaksi</h1>
           <p className="text-muted-foreground">Kelola pemasukan dan pengeluaran</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Transaksi
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportTransactionsCsv(filteredTransactions || [], currency)}
+            disabled={!filteredTransactions?.length}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenDialog()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Tambah Transaksi
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -462,6 +472,7 @@ export default function Transactions() {
             </Form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filters */}

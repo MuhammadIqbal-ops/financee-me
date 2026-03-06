@@ -10,8 +10,8 @@ export interface DashboardLayout {
 }
 
 const DEFAULT_LAYOUT: DashboardLayout = {
-  widgets: ['budget', 'goals', 'recurring', 'wallets', 'debts'],
-  visible: { budget: true, goals: true, recurring: true, wallets: true, debts: true },
+  widgets: ['budget', 'goals', 'recurring', 'wallets', 'debts', 'weeklyTrend'],
+  visible: { budget: true, goals: true, recurring: true, wallets: true, debts: true, weeklyTrend: true },
 };
 
 export const WIDGET_LABELS: Record<string, string> = {
@@ -20,6 +20,7 @@ export const WIDGET_LABELS: Record<string, string> = {
   recurring: 'Transaksi Berulang',
   wallets: 'Dompet',
   debts: 'Hutang/Piutang',
+  weeklyTrend: 'Tren Mingguan',
 };
 
 export function useDashboardLayout() {

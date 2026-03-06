@@ -24,6 +24,7 @@ import { GoalsSummary } from '@/components/dashboard/GoalsSummary';
 import { RecurringSummary } from '@/components/dashboard/RecurringSummary';
 import { WalletSummary } from '@/components/dashboard/WalletSummary';
 import { DebtSummary } from '@/components/dashboard/DebtSummary';
+import { WeeklyTrendChart } from '@/components/dashboard/WeeklyTrendChart';
 import { DashboardSettings } from '@/components/dashboard/DashboardSettings';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import { useNavigate } from 'react-router-dom';
@@ -61,6 +62,7 @@ export default function Dashboard() {
     recurring: <RecurringSummary key="recurring" currency={currency} />,
     wallets: <WalletSummary key="wallets" currency={currency} />,
     debts: <DebtSummary key="debts" currency={currency} />,
+    weeklyTrend: <WeeklyTrendChart key="weeklyTrend" month={selectedMonth} year={selectedYear} currency={currency} />,
   };
 
   const goToPrevMonth = () => setSelectedDate((d) => subMonths(d, 1));

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Wallet as WalletIcon, ArrowRightLeft } from 'lucide-react';
+import { Plus, Pencil, Trash2, Wallet as WalletIcon, ArrowRightLeft, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -281,34 +281,8 @@ export default function Wallets() {
         )}
       </div>
 
-      {/* Transfer History */}
-      {transfers && transfers.length > 0 && (
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ArrowRightLeft className="w-5 h-5" /> Riwayat Transfer
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {transfers.map(tr => (
-                <div key={tr.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div>
-                    <p className="font-medium text-sm text-foreground">
-                      {getWalletName(tr.from_wallet_id)} → {getWalletName(tr.to_wallet_id)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(tr.date), 'd MMM yyyy', { locale: idLocale })}
-                      {tr.note && ` • ${tr.note}`}
-                    </p>
-                  </div>
-                  <p className="font-semibold text-primary">{formatCurrency(Number(tr.amount), currency)}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Transfer History with Date Filter */}
+      <TransferHistory transfers={transfers || []} wallets={wallets || []} currency={currency} />
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

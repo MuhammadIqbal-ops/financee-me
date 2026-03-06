@@ -36,6 +36,80 @@ type TransferFormData = z.infer<typeof transferSchema>;
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
+function TransferHistory({ transfers, wallets, currency }: {
+  transfers: { id: string; from_wallet_id: string; to_wallet_id: string; amount: number; note: string | null; date: string }[];
+  wallets: (Wallet & { balance: number })[];
+  currency: string;
+}) {
+  const [filterMonth, setFilterMonth] = useState('all');
+  const getWalletName = (id: string) => wallets.find(w => w.id === id)?.name || '?';
+
+  const months = useMemo(() => {
+    const set = new Set<string>();
+    transfers.forEach(t => {
+      const d = new Date(t.date);
+      set.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    });
+    return Array.from(set).sort().reverse();
+  }, [transfers]);
+
+  const filtered = useMemo(() => {
+    if (filterMonth === 'all') return transfers;
+    return transfers.filter(t => {
+      const d = new Date(t.date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === filterMonth;
+    });
+  }, [transfers, filterMonth]);
+
+  if (!transfers.length) return null;
+
+  return (
+    <Card className="shadow-card">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <ArrowRightLeft className="w-5 h-5" /> Riwayat Transfer
+        </CardTitle>
+        <Select value={filterMonth} onValueChange={setFilterMonth}>
+          <SelectTrigger className="w-[160px]">
+            <CalendarIcon className="w-4 h-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua</SelectItem>
+            {months.map(m => {
+              const [y, mo] = m.split('-');
+              const label = format(new Date(Number(y), Number(mo) - 1), 'MMM yyyy', { locale: idLocale });
+              return <SelectItem key={m} value={m}>{label}</SelectItem>;
+            })}
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent>
+        {filtered.length === 0 ? (
+          <p className="text-center text-muted-foreground py-6 text-sm">Tidak ada transfer</p>
+        ) : (
+          <div className="space-y-2">
+            {filtered.map(tr => (
+              <div key={tr.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div>
+                  <p className="font-medium text-sm text-foreground">
+                    {getWalletName(tr.from_wallet_id)} → {getWalletName(tr.to_wallet_id)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(tr.date), 'd MMM yyyy', { locale: idLocale })}
+                    {tr.note && ` • ${tr.note}`}
+                  </p>
+                </div>
+                <p className="font-semibold text-primary">{formatCurrency(Number(tr.amount), currency)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Wallets() {
   const [isOpen, setIsOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);

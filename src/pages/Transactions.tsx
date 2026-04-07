@@ -78,6 +78,7 @@ export default function Transactions() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: transactions, isLoading } = useTransactions();
   const { data: categories } = useCategories();
@@ -143,12 +144,36 @@ export default function Transactions() {
     setIsDialogOpen(true);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleFileSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
       setReceiptFile(file);
       setReceiptPreview(URL.createObjectURL(file));
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
   };
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
@@ -429,7 +454,7 @@ export default function Transactions() {
                   )}
                 />
 
-                {/* Receipt upload */}
+                {/* Receipt upload with drag-and-drop */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Foto Struk (opsional)</label>
                   <input
@@ -440,7 +465,7 @@ export default function Transactions() {
                     className="hidden"
                   />
                   {receiptPreview ? (
-                    <div className="relative w-full">
+                    <div className="relative w-full animate-scale-in">
                       <img src={receiptPreview} alt="Receipt" className="w-full max-h-40 object-cover rounded-lg border" />
                       <Button
                         type="button"
@@ -453,10 +478,33 @@ export default function Transactions() {
                       </Button>
                     </div>
                   ) : (
-                    <Button type="button" variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
-                      <Upload size={16} />
-                      Upload Struk
-                    </Button>
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={cn(
+                        'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-all duration-200',
+                        isDragging
+                          ? 'border-primary bg-primary/5 scale-[1.02]'
+                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                      )}
+                    >
+                      <div className={cn(
+                        'rounded-full p-2 transition-colors duration-200',
+                        isDragging ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                      )}>
+                        <Image size={20} />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-foreground">
+                          {isDragging ? 'Lepas untuk upload' : 'Seret foto struk ke sini'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          atau klik untuk memilih file
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </div>
 

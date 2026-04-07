@@ -249,7 +249,6 @@ export type Database = {
           created_at: string
           currency: string | null
           dashboard_layout: Json | null
-          email: string | null
           full_name: string | null
           id: string
           monthly_income_estimate: number | null
@@ -264,7 +263,6 @@ export type Database = {
           created_at?: string
           currency?: string | null
           dashboard_layout?: Json | null
-          email?: string | null
           full_name?: string | null
           id?: string
           monthly_income_estimate?: number | null
@@ -279,7 +277,6 @@ export type Database = {
           created_at?: string
           currency?: string | null
           dashboard_layout?: Json | null
-          email?: string | null
           full_name?: string | null
           id?: string
           monthly_income_estimate?: number | null

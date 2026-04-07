@@ -54,6 +54,7 @@ import { formatCurrency } from '@/lib/currency';
 import { Transaction, TransactionType } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { exportTransactionsCsv } from '@/lib/exportCsv';
 import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
 
@@ -80,6 +81,7 @@ export default function Transactions() {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
   const { data: categories } = useCategories();
   const { data: profile } = useProfile();
@@ -177,12 +179,32 @@ export default function Transactions() {
   };
 
   const uploadReceipt = async (file: File): Promise<string | null> => {
+    if (!user) throw new Error('Not authenticated');
     const ext = file.name.split('.').pop();
-    const path = `${crypto.randomUUID()}.${ext}`;
+    const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from('receipts').upload(path, file);
     if (error) throw error;
-    const { data } = supabase.storage.from('receipts').getPublicUrl(path);
-    return data.publicUrl;
+    const { data } = await supabase.storage.from('receipts').createSignedUrl(path, 3600);
+    if (!data?.signedUrl) throw new Error('Failed to create signed URL');
+    return data.signedUrl;
+  };
+
+  const getReceiptUrl = async (storedUrl: string): Promise<string> => {
+    // If it's already a signed URL or full URL, extract path
+    try {
+      const url = new URL(storedUrl);
+      const pathMatch = url.pathname.match(/\/object\/(?:public|sign)\/receipts\/(.+)/);
+      if (pathMatch) {
+        const filePath = decodeURIComponent(pathMatch[1].split('?')[0]);
+        const { data } = await supabase.storage.from('receipts').createSignedUrl(filePath, 3600);
+        return data?.signedUrl || storedUrl;
+      }
+    } catch {
+      // If it's just a path, use it directly
+      const { data } = await supabase.storage.from('receipts').createSignedUrl(storedUrl, 3600);
+      return data?.signedUrl || storedUrl;
+    }
+    return storedUrl;
   };
 
   const onSubmit = async (data: TransactionFormData) => {
@@ -594,9 +616,16 @@ export default function Transactions() {
                   </div>
                   <div className="flex items-center gap-2">
                     {(transaction as any).receipt_url && (
-                      <a href={(transaction as any).receipt_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={async () => {
+                          const url = await getReceiptUrl((transaction as any).receipt_url);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        }}
+                      >
                         <Image size={16} />
-                      </a>
+                      </button>
                     )}
                     <div className="text-right">
                       <p

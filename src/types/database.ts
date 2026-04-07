@@ -4,7 +4,6 @@ export interface Profile {
   id: string;
   user_id: string;
   full_name: string | null;
-  email: string | null;
   currency: string;
   monthly_income_estimate: number;
   dashboard_layout: any;

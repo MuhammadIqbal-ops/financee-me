@@ -81,6 +81,7 @@ export default function Transactions() {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
   const { data: categories } = useCategories();
   const { data: profile } = useProfile();

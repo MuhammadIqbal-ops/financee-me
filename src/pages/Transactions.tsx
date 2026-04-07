@@ -78,6 +78,7 @@ export default function Transactions() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { data: transactions, isLoading } = useTransactions();
   const { data: categories } = useCategories();

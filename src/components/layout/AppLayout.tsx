@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { Separator } from '@/components/ui/separator';
@@ -8,6 +8,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function AppLayout() {
   usePushNotifications();
+  const location = useLocation();
 
   return (
     <SidebarProvider>
@@ -21,7 +22,7 @@ export default function AppLayout() {
           <ThemeToggle />
         </header>
         <main className="flex-1 overflow-auto bg-muted/30">
-          <div className="container py-6">
+          <div className="container py-6 page-transition" key={location.pathname}>
             <Outlet />
           </div>
         </main>

@@ -82,8 +82,8 @@ export function AppSidebar() {
                     asChild
                     isActive={location.pathname === item.url}
                   >
-                    <Link to={item.url}>
-                      <item.icon className="w-5 h-5" />
+                    <Link to={item.url} className="transition-all duration-200">
+                      <item.icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>

@@ -44,11 +44,11 @@ export default function Index() {
         {/* Decorative background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
-            className="absolute -top-32 -right-32 w-64 h-64 sm:w-96 sm:h-96 rounded-full opacity-10 blur-3xl"
+            className="absolute -top-32 -right-32 w-64 h-64 sm:w-96 sm:h-96 rounded-full opacity-10 blur-3xl transition-all duration-700"
             style={{ background: 'hsl(var(--primary))' }}
           />
           <div
-            className="absolute -bottom-24 -left-24 w-48 h-48 sm:w-72 sm:h-72 rounded-full opacity-10 blur-3xl"
+            className="absolute -bottom-24 -left-24 w-48 h-48 sm:w-72 sm:h-72 rounded-full opacity-10 blur-3xl transition-all duration-700"
             style={{ background: 'hsl(var(--accent))' }}
           />
         </div>

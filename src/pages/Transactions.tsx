@@ -337,7 +337,7 @@ export default function Transactions() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Mata Uang</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={(v) => field.onChange(v === '__default__' ? '' : v)} value={field.value || '__default__'}>
                         <FormControl>
                           <SelectTrigger>
                             <Globe className="w-4 h-4 mr-2" />
@@ -345,7 +345,7 @@ export default function Transactions() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">
+                          <SelectItem value="__default__">
                             {currency} (default)
                           </SelectItem>
                           {SUPPORTED_CURRENCIES.filter(c => c.code !== currency).map((c) => (

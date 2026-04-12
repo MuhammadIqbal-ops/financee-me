@@ -345,7 +345,7 @@ export default function Transactions() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">
+                          <SelectItem value="__default__">
                             {currency} (default)
                           </SelectItem>
                           {SUPPORTED_CURRENCIES.filter(c => c.code !== currency).map((c) => (

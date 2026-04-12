@@ -337,7 +337,7 @@ export default function Transactions() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Mata Uang</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={(v) => field.onChange(v === '__default__' ? '' : v)} value={field.value || '__default__'}>
                         <FormControl>
                           <SelectTrigger>
                             <Globe className="w-4 h-4 mr-2" />

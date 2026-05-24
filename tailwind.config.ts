@@ -14,7 +14,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['Epilogue', 'system-ui', 'sans-serif'],
+        display: ['Urbanist', 'system-ui', 'sans-serif'],
+      },
+      boxShadow: {
+        glow: '0 0 0 1px hsl(var(--primary) / 0.2), 0 8px 32px -4px hsl(var(--primary) / 0.45)',
       },
       colors: {
         border: "hsl(var(--border))",

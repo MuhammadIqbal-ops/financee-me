@@ -43,14 +43,16 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
-      <div className="w-full max-w-md animate-slide-up">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4 shadow-elevated">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background p-4 relative overflow-hidden safe-top safe-bottom">
+      <div className="absolute -top-32 -left-32 h-80 w-80 rounded-full gradient-primary opacity-20 blur-3xl" />
+      <div className="absolute -bottom-32 -right-32 h-80 w-80 rounded-full gradient-accent opacity-20 blur-3xl" />
+      <div className="w-full max-w-md animate-slide-up relative z-10">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl gradient-primary mb-4 shadow-glow">
             <Wallet className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">DompetPintar</h1>
-          <p className="text-muted-foreground mt-2">Mulai perjalanan keuanganmu</p>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground">DompetPintar</h1>
+          <p className="text-muted-foreground mt-2 text-sm">Mulai perjalanan keuanganmu</p>
         </div>
 
         <Card className="shadow-card border-border/50">
@@ -124,7 +126,7 @@ export default function Register() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

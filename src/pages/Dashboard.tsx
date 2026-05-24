@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { TrendingUp, TrendingDown, Wallet, Plus, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { format, subMonths, addMonths } from 'date-fns';
 import { id } from 'date-fns/locale';

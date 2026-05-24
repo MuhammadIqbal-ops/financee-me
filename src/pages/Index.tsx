@@ -64,8 +64,8 @@ export default function Index() {
               <Wallet className="h-8 w-8 sm:h-10 sm:w-10 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-foreground tracking-tight">
-            DompetPintar
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold text-foreground tracking-tight">
+            Dompet<span className="text-gradient-primary">Pintar</span>
           </h1>
         </div>
 
@@ -85,17 +85,18 @@ export default function Index() {
           style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
         >
           <Button
-            size="lg"
-            className="w-full sm:w-auto gradient-primary text-primary-foreground shadow-elevated hover:shadow-card transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-base px-8"
+            variant="gradient"
+            size="xl"
+            className="w-full sm:w-auto"
             onClick={() => navigate('/login')}
           >
             Mulai Sekarang
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
           <Button
-            size="lg"
+            size="xl"
             variant="outline"
-            className="w-full sm:w-auto border-border hover:bg-secondary transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] text-base px-8"
+            className="w-full sm:w-auto"
             onClick={() => navigate('/register')}
           >
             Daftar Gratis

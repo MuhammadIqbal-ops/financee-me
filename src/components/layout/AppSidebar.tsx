@@ -59,36 +59,40 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+    <Sidebar className="border-r-0">
+      <SidebarHeader className="border-b border-sidebar-border p-4 gradient-sidebar">
         <Link to="/dashboard" className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-sidebar-primary">
-            <Wallet className="w-5 h-5 text-sidebar-primary-foreground" />
+          <div className="flex items-center justify-center w-11 h-11 rounded-2xl gradient-primary shadow-glow">
+            <Wallet className="w-5 h-5 text-primary-foreground" />
           </div>
-          <div>
-            <h1 className="font-bold text-lg text-sidebar-foreground">DompetPintar</h1>
-            <p className="text-xs text-sidebar-foreground/60">Keuangan Cerdas</p>
+          <div className="min-w-0">
+            <h1 className="font-display font-extrabold text-lg text-sidebar-foreground tracking-tight truncate">DompetPintar</h1>
+            <p className="text-[11px] text-sidebar-foreground/60 uppercase tracking-wider">Keuangan Cerdas</p>
           </div>
         </Link>
       </SidebarHeader>
-      
-      <SidebarContent>
+
+      <SidebarContent className="gradient-sidebar">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                  >
-                    <Link to={item.url} className="transition-all duration-200">
-                      <item.icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="gap-1 px-2">
+              {menuItems.map((item) => {
+                const active = location.pathname === item.url;
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      className="rounded-xl data-[active=true]:bg-sidebar-primary data-[active=true]:text-sidebar-primary-foreground data-[active=true]:shadow-glow"
+                    >
+                      <Link to={item.url} className="group transition-all duration-200">
+                        <item.icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+                        <span className="font-medium">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

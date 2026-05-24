@@ -20,28 +20,34 @@ export function StatCard({ title, value, icon, trend, trendUp, variant = 'defaul
   };
 
   return (
-    <Card className={cn('shadow-card hover:shadow-elevated transition-shadow', variantStyles[variant])}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold text-foreground">{value}</p>
+    <Card className={cn('hover-lift overflow-hidden', variantStyles[variant])}>
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1.5 min-w-0">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">{title}</p>
+            <p className="font-display text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
+              {value}
+            </p>
             {trend && (
-              <p className={cn(
-                'text-xs font-medium',
-                trendUp ? 'text-success' : 'text-destructive'
-              )}>
+              <p
+                className={cn(
+                  'text-xs font-medium',
+                  trendUp ? 'text-[hsl(var(--income))]' : 'text-[hsl(var(--expense))]'
+                )}
+              >
                 {trend}
               </p>
             )}
           </div>
-          <div className={cn(
-            'p-3 rounded-xl',
-            variant === 'income' && 'bg-income/10 text-income',
-            variant === 'expense' && 'bg-expense/10 text-expense',
-            variant === 'balance' && 'bg-primary/10 text-primary',
-            variant === 'default' && 'bg-muted text-muted-foreground'
-          )}>
+          <div
+            className={cn(
+              'shrink-0 p-2.5 sm:p-3 rounded-2xl',
+              variant === 'income' && 'bg-[hsl(var(--income)/0.12)] text-[hsl(var(--income))]',
+              variant === 'expense' && 'bg-[hsl(var(--expense)/0.12)] text-[hsl(var(--expense))]',
+              variant === 'balance' && 'gradient-primary text-primary-foreground shadow-glow',
+              variant === 'default' && 'bg-muted text-muted-foreground'
+            )}
+          >
             {icon}
           </div>
         </div>

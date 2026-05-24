@@ -73,24 +73,28 @@ export default function Dashboard() {
   const goToCurrentMonth = () => setSelectedDate(now);
 
   return (
-    <ScrollArea className="h-[100dvh] w-full">
-      <div className="p-4 sm:p-6 md:p-8 space-y-6">
-        {/* Header with Greeting & Quick Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 animate-fade-in">
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-              {greeting}{displayName ? `, ${displayName}` : ''}! 👋
+    <div className="space-y-6">
+      {/* Hero with Greeting & Quick Actions */}
+      <div className="relative overflow-hidden rounded-3xl gradient-primary p-5 sm:p-7 text-primary-foreground shadow-elevated animate-fade-in">
+        <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -bottom-20 -left-10 h-48 w-48 rounded-full bg-accent/30 blur-3xl" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1 min-w-0">
+            <p className="text-xs uppercase tracking-widest text-primary-foreground/70">
+              {format(selectedDate, 'EEEE, d MMMM yyyy', { locale: id })}
+            </p>
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight">
+              {greeting}{displayName ? `, ${displayName}` : ''} 👋
             </h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              Ringkasan keuangan Anda
+            <p className="text-sm text-primary-foreground/80 flex items-center gap-1">
+              Ringkasan keuangan kamu
               <DashboardSettings />
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button
               size="sm"
-              variant="outline"
-              className="gap-1.5 border-[hsl(var(--income))] text-[hsl(var(--income))] hover:bg-[hsl(var(--income)/0.1)]"
+              className="gap-1.5 bg-white/15 hover:bg-white/25 text-primary-foreground border border-white/20 backdrop-blur"
               onClick={() => navigate('/transactions?type=income')}
             >
               <Plus size={16} />
@@ -98,8 +102,7 @@ export default function Dashboard() {
             </Button>
             <Button
               size="sm"
-              variant="outline"
-              className="gap-1.5 border-[hsl(var(--expense))] text-[hsl(var(--expense))] hover:bg-[hsl(var(--expense)/0.1)]"
+              className="gap-1.5 bg-white/15 hover:bg-white/25 text-primary-foreground border border-white/20 backdrop-blur"
               onClick={() => navigate('/transactions?type=expense')}
             >
               <Plus size={16} />
@@ -107,6 +110,7 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+      </div>
 
         {/* Month Filter */}
         <div className="flex items-center justify-center gap-2 animate-fade-in">
@@ -270,8 +274,7 @@ export default function Dashboard() {
               )}
             </div>
           </CardContent>
-        </Card>
-      </div>
-    </ScrollArea>
+      </Card>
+    </div>
   );
 }

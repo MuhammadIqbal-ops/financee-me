@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Pencil, Trash2, Tags as TagsIcon, PiggyBank } from 'lucide-react';
+import { Plus, Pencil, Trash2, Tags as TagsIcon, PiggyBank, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -256,38 +257,99 @@ export default function Categories() {
                 </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {currentCategories.map((category) => (
-                    <div
-                      key={category.id}
-                      className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-10 h-10 rounded-full flex items-center justify-center font-medium text-white"
-                          style={{ backgroundColor: category.color }}
-                        >
-                          {category.name.charAt(0)}
+                  {currentCategories.map((category) => {
+                    const spent = categorySpending.get(category.id) || 0;
+                    const budget = budgets?.find((b) => b.category_id === category.id);
+                    const budgetAmount = budget ? Number(budget.amount) : 0;
+                    const hasBudget = activeTab === 'expense' && budgetAmount > 0;
+                    const percentage = hasBudget ? (spent / budgetAmount) * 100 : 0;
+                    const isExceeded = hasBudget && percentage >= 100;
+                    const isNear = hasBudget && percentage >= 80 && percentage < 100;
+                    const clampedPct = Math.min(percentage, 100);
+
+                    return (
+                      <div
+                        key={category.id}
+                        className={cn(
+                          'flex flex-col gap-3 p-4 rounded-lg border bg-muted/50 hover:bg-muted transition-colors',
+                          isExceeded && 'border-destructive/60 bg-destructive/5',
+                          isNear && 'border-warning/60 bg-warning/5'
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center font-medium text-white shrink-0"
+                              style={{ backgroundColor: category.color }}
+                            >
+                              {category.name.charAt(0)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{category.name}</p>
+                              {hasBudget && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {formatCurrency(spent, currency)} / {formatCurrency(budgetAmount, currency)}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenCategoryDialog(category)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => setDeleteCategory(category.id)}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
-                        <span className="font-medium">{category.name}</span>
+
+                        {hasBudget && (
+                          <div className="space-y-2">
+                            <Progress
+                              value={clampedPct}
+                              className={cn(
+                                'h-2',
+                                isExceeded && '[&>div]:bg-destructive',
+                                isNear && '[&>div]:bg-warning',
+                                !isExceeded && !isNear && '[&>div]:bg-success'
+                              )}
+                            />
+                            <div className="flex items-center justify-between">
+                              {isExceeded ? (
+                                <Badge variant="destructive" className="gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Melebihi anggaran
+                                </Badge>
+                              ) : isNear ? (
+                                <Badge className="gap-1 bg-warning text-warning-foreground hover:bg-warning/90">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Mendekati batas
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-success" />
+                                  Aman
+                                </Badge>
+                              )}
+                              <span className={cn(
+                                'text-xs font-semibold tabular-nums',
+                                isExceeded && 'text-destructive',
+                                isNear && 'text-warning'
+                              )}>
+                                {Math.round(percentage)}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {activeTab === 'expense' && !hasBudget && spent > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Terpakai {formatCurrency(spent, currency)} · belum ada anggaran
+                          </p>
+                        )}
                       </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleOpenCategoryDialog(category)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeleteCategory(category.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

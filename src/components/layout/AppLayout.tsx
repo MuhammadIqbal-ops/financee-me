@@ -5,6 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationBell } from '@/components/NotificationBell';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import { MobileBottomNav } from './MobileBottomNav';
 
 const TITLES: Record<string, string> = {
@@ -23,6 +24,7 @@ const TITLES: Record<string, string> = {
 
 export default function AppLayout() {
   usePushNotifications();
+  useRealtimeSync();
   const location = useLocation();
   const title =
     Object.entries(TITLES).find(([p]) => matchPath(p, location.pathname))?.[1] ?? 'DompetPintar';

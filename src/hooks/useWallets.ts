@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logUserActivity } from '@/lib/activityLogger';
+import { optimisticInsert, optimisticUpdate, optimisticDelete, rollback, tempId, Snapshot } from '@/lib/optimistic';
 
 export interface Wallet {
   id: string;
@@ -73,13 +74,31 @@ export function useCreateWallet() {
       if (error) throw error;
       return data;
     },
+    onMutate: async (input) => {
+      const optimistic = {
+        id: tempId(),
+        user_id: user?.id,
+        icon: 'wallet',
+        color: '#10b981',
+        initial_balance: 0,
+        is_default: false,
+        ...input,
+      };
+      const snap = await optimisticInsert(queryClient, ['wallets'], optimistic as any);
+      return { snap };
+    },
+    onError: (e: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal menambahkan dompet: ' + e.message);
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Dompet berhasil ditambahkan!');
       logUserActivity(user!.id, 'create', 'wallet', data.id, { name: data.name });
     },
-    onError: (e: Error) => toast.error('Gagal menambahkan dompet: ' + e.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
+    },
   });
 }
 
@@ -92,13 +111,22 @@ export function useUpdateWallet() {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, ...input }) => {
+      const snap = await optimisticUpdate(queryClient, ['wallets'], id, input as any);
+      return { snap };
+    },
+    onError: (e: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal memperbarui dompet: ' + e.message);
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Dompet berhasil diperbarui!');
       logUserActivity(user!.id, 'update', 'wallet', data.id, { name: data.name });
     },
-    onError: (e: Error) => toast.error('Gagal memperbarui dompet: ' + e.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
+    },
   });
 }
 
@@ -111,12 +139,21 @@ export function useDeleteWallet() {
       if (error) throw error;
       return id;
     },
+    onMutate: async (id) => {
+      const snap = await optimisticDelete(queryClient, ['wallets'], id);
+      return { snap };
+    },
+    onError: (e: Error, _id, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal menghapus dompet: ' + e.message);
+    },
     onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: ['wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Dompet berhasil dihapus!');
       logUserActivity(user!.id, 'delete', 'wallet', id);
     },
-    onError: (e: Error) => toast.error('Gagal menghapus dompet: ' + e.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
+    },
   });
 }

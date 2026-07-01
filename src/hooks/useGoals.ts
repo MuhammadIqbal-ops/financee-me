@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Goal } from '@/types/database';
 import { toast } from 'sonner';
 import { logUserActivity } from '@/lib/activityLogger';
+import { optimisticInsert, optimisticUpdate, optimisticDelete, rollback, tempId, Snapshot } from '@/lib/optimistic';
 
 export interface GoalInput {
   name: string;
@@ -34,12 +35,20 @@ export function useCreateGoal() {
       if (error) throw error;
       return data;
     },
+    onMutate: async (input) => {
+      const optimistic = { id: tempId(), user_id: user?.id, current_amount: 0, ...input };
+      const snap = await optimisticInsert(queryClient, ['goals'], optimistic as any);
+      return { snap };
+    },
+    onError: (error: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal menambahkan target: ' + error.message);
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Target berhasil ditambahkan!');
       logUserActivity(user!.id, 'create', 'goal', data.id, { name: data.name });
     },
-    onError: (error: Error) => toast.error('Gagal menambahkan target: ' + error.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
 }
 
@@ -52,12 +61,19 @@ export function useUpdateGoal() {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, ...input }) => {
+      const snap = await optimisticUpdate(queryClient, ['goals'], id, input as any);
+      return { snap };
+    },
+    onError: (error: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal memperbarui target: ' + error.message);
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Target berhasil diperbarui!');
       logUserActivity(user!.id, 'update', 'goal', data.id, { name: data.name });
     },
-    onError: (error: Error) => toast.error('Gagal memperbarui target: ' + error.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
 }
 
@@ -70,11 +86,18 @@ export function useDeleteGoal() {
       if (error) throw error;
       return id;
     },
+    onMutate: async (id) => {
+      const snap = await optimisticDelete(queryClient, ['goals'], id);
+      return { snap };
+    },
+    onError: (error: Error, _id, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal menghapus target: ' + error.message);
+    },
     onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Target berhasil dihapus!');
       logUserActivity(user!.id, 'delete', 'goal', id);
     },
-    onError: (error: Error) => toast.error('Gagal menghapus target: ' + error.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['goals'] }),
   });
 }

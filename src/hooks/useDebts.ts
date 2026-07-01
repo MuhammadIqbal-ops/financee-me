@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { logUserActivity } from '@/lib/activityLogger';
+import { optimisticInsert, optimisticUpdate, optimisticDelete, rollback, tempId, Snapshot } from '@/lib/optimistic';
 
 export type DebtType = 'payable' | 'receivable';
 export type DebtStatus = 'unpaid' | 'partial' | 'paid';
@@ -51,12 +52,20 @@ export function useCreateDebt() {
       if (error) throw error;
       return data;
     },
+    onMutate: async (input) => {
+      const optimistic = { id: tempId(), user_id: user?.id, status: 'unpaid', paid_amount: 0, ...input };
+      const snap = await optimisticInsert(queryClient, ['debts'], optimistic as any);
+      return { snap };
+    },
+    onError: (e: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal: ' + e.message);
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
       toast.success('Hutang/piutang berhasil ditambahkan!');
       logUserActivity(user!.id, 'create', 'debt', data.id, { name: data.person_name, type: data.type });
     },
-    onError: (e: Error) => toast.error('Gagal: ' + e.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['debts'] }),
   });
 }
 
@@ -69,12 +78,19 @@ export function useUpdateDebt() {
       if (error) throw error;
       return data;
     },
+    onMutate: async ({ id, ...input }) => {
+      const snap = await optimisticUpdate(queryClient, ['debts'], id, input as any);
+      return { snap };
+    },
+    onError: (e: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal: ' + e.message);
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
       toast.success('Berhasil diperbarui!');
       logUserActivity(user!.id, 'update', 'debt', data.id, { name: data.person_name });
     },
-    onError: (e: Error) => toast.error('Gagal: ' + e.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['debts'] }),
   });
 }
 
@@ -87,11 +103,18 @@ export function useDeleteDebt() {
       if (error) throw error;
       return id;
     },
+    onMutate: async (id) => {
+      const snap = await optimisticDelete(queryClient, ['debts'], id);
+      return { snap };
+    },
+    onError: (e: Error, _id, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal: ' + e.message);
+    },
     onSuccess: (id) => {
-      queryClient.invalidateQueries({ queryKey: ['debts'] });
       toast.success('Berhasil dihapus!');
       logUserActivity(user!.id, 'delete', 'debt', id);
     },
-    onError: (e: Error) => toast.error('Gagal: ' + e.message),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['debts'] }),
   });
 }

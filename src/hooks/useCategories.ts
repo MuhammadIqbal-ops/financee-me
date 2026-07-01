@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Category, TransactionType } from '@/types/database';
 import { toast } from 'sonner';
+import { optimisticInsert, optimisticUpdate, optimisticDelete, rollback, tempId, Snapshot } from '@/lib/optimistic';
 
 export interface CategoryInput {
   name: string;
@@ -42,23 +43,23 @@ export function useCreateCategory() {
     mutationFn: async (input: CategoryInput) => {
       const { data, error } = await supabase
         .from('categories')
-        .insert({
-          user_id: user!.id,
-          ...input,
-        })
+        .insert({ user_id: user!.id, ...input })
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Kategori berhasil ditambahkan!');
+    onMutate: async (input) => {
+      const optimistic = { id: tempId(), user_id: user?.id, ...input };
+      const snap = await optimisticInsert(queryClient, ['categories'], optimistic as any);
+      return { snap };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
       toast.error('Gagal menambahkan kategori: ' + error.message);
     },
+    onSuccess: () => toast.success('Kategori berhasil ditambahkan!'),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   });
 }
 
@@ -73,17 +74,19 @@ export function useUpdateCategory() {
         .eq('id', id)
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Kategori berhasil diperbarui!');
+    onMutate: async ({ id, ...input }) => {
+      const snap = await optimisticUpdate(queryClient, ['categories'], id, input as any);
+      return { snap };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _v, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
       toast.error('Gagal memperbarui kategori: ' + error.message);
     },
+    onSuccess: () => toast.success('Kategori berhasil diperbarui!'),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   });
 }
 
@@ -92,19 +95,18 @@ export function useDeleteCategory() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('categories').delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast.success('Kategori berhasil dihapus!');
+    onMutate: async (id) => {
+      const snap = await optimisticDelete(queryClient, ['categories'], id);
+      return { snap };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _id, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
       toast.error('Gagal menghapus kategori: ' + error.message);
     },
+    onSuccess: () => toast.success('Kategori berhasil dihapus!'),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   });
 }

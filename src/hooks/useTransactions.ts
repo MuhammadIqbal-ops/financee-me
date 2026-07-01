@@ -148,15 +148,22 @@ export function useDeleteTransaction() {
 
       if (error) throw error;
     },
+    onMutate: async (id) => {
+      const snap = await optimisticDelete(queryClient, ['transactions'], id);
+      return { snap };
+    },
+    onError: (error: Error, _id, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal menghapus transaksi: ' + error.message);
+    },
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
-      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
       toast.success('Transaksi berhasil dihapus!');
       logUserActivity(user!.id, 'delete', 'transaction', id);
     },
-    onError: (error: Error) => {
-      toast.error('Gagal menghapus transaksi: ' + error.message);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
+      queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
     },
   });
 }

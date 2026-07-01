@@ -6,6 +6,7 @@ import { Transaction, TransactionType } from '@/types/database';
 import { toast } from 'sonner';
 import { checkBudgetAfterTransaction } from '@/hooks/useBudgetCheck';
 import { logUserActivity } from '@/lib/activityLogger';
+import { optimisticInsert, optimisticUpdate, optimisticDelete, rollback, tempId, Snapshot } from '@/lib/optimistic';
 export interface TransactionInput {
   amount: number;
   type: TransactionType;
@@ -64,24 +65,32 @@ export function useCreateTransaction() {
       if (error) throw error;
       return { transaction: data, input };
     },
+    onMutate: async (input) => {
+      const optimistic = {
+        id: tempId(),
+        user_id: user?.id,
+        ...input,
+        category: null,
+        created_at: new Date().toISOString(),
+      };
+      const snap = await optimisticInsert(queryClient, ['transactions'], optimistic as any);
+      return { snap };
+    },
+    onError: (error: Error, _vars, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal menambahkan transaksi: ' + error.message);
+    },
     onSuccess: async ({ transaction, input }) => {
+      toast.success('Transaksi berhasil ditambahkan!');
+      logUserActivity(user!.id, 'create', 'transaction', transaction.id, { type: input.type, amount: input.amount, note: input.note });
+      if (input.type === 'expense' && input.category_id) {
+        await checkBudgetAfterTransaction(input.category_id, input.date, profile?.currency || 'IDR');
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
-      toast.success('Transaksi berhasil ditambahkan!');
-      logUserActivity(user!.id, 'create', 'transaction', transaction.id, { type: input.type, amount: input.amount, note: input.note });
-
-      // Check budget if it's an expense
-      if (input.type === 'expense' && input.category_id) {
-        await checkBudgetAfterTransaction(
-          input.category_id,
-          input.date,
-          profile?.currency || 'IDR'
-        );
-      }
-    },
-    onError: (error: Error) => {
-      toast.error('Gagal menambahkan transaksi: ' + error.message);
     },
   });
 }
@@ -103,24 +112,25 @@ export function useUpdateTransaction() {
       if (error) throw error;
       return { transaction: data, input };
     },
+    onMutate: async ({ id, ...input }) => {
+      const snap = await optimisticUpdate(queryClient, ['transactions'], id, input as any);
+      return { snap };
+    },
+    onError: (error: Error, _vars, ctx) => {
+      rollback(queryClient, (ctx as { snap?: Snapshot })?.snap);
+      toast.error('Gagal memperbarui transaksi: ' + error.message);
+    },
     onSuccess: async ({ transaction, input }) => {
+      toast.success('Transaksi berhasil diperbarui!');
+      logUserActivity(user!.id, 'update', 'transaction', transaction.id, { type: input.type, amount: input.amount });
+      if (input.type === 'expense' && input.category_id) {
+        await checkBudgetAfterTransaction(input.category_id, input.date, profile?.currency || 'IDR');
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['monthlyStats'] });
       queryClient.invalidateQueries({ queryKey: ['walletBalances'] });
-      toast.success('Transaksi berhasil diperbarui!');
-      logUserActivity(user!.id, 'update', 'transaction', transaction.id, { type: input.type, amount: input.amount });
-
-      // Check budget if it's an expense
-      if (input.type === 'expense' && input.category_id) {
-        await checkBudgetAfterTransaction(
-          input.category_id,
-          input.date,
-          profile?.currency || 'IDR'
-        );
-      }
-    },
-    onError: (error: Error) => {
-      toast.error('Gagal memperbarui transaksi: ' + error.message);
     },
   });
 }

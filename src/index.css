@@ -4,122 +4,122 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DompetPintar — Midnight Indigo Theme */
+/* DompetPintar — Cyber-Precision Banking Theme */
 
 @layer base {
   :root {
-    /* Surfaces — clean light with subtle indigo cast */
-    --background: 240 30% 99%;
-    --foreground: 240 35% 12%;
+    /* Surfaces — cool arctic light with navy cast */
+    --background: 215 40% 97%;
+    --foreground: 220 60% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 35% 12%;
+    --card-foreground: 220 60% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 35% 12%;
+    --popover-foreground: 220 60% 8%;
 
-    /* Primary — electric indigo #4f46e5 */
-    --primary: 243 75% 59%;
+    /* Primary — electric blue #0066FF */
+    --primary: 217 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 250 85% 70%;
+    --primary-glow: 200 100% 60%;
 
-    --secondary: 240 30% 96%;
-    --secondary-foreground: 240 35% 20%;
+    --secondary: 215 35% 94%;
+    --secondary-foreground: 220 60% 15%;
 
-    --muted: 240 25% 96%;
-    --muted-foreground: 240 15% 45%;
+    --muted: 215 30% 95%;
+    --muted-foreground: 220 20% 42%;
 
-    --accent: 250 85% 70%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 195 100% 55%;
+    --accent-foreground: 220 60% 8%;
 
-    --success: 152 65% 42%;
+    --success: 160 85% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 38 95% 15%;
+    --warning: 38 95% 52%;
+    --warning-foreground: 38 95% 12%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 355 82% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --income: 152 65% 42%;
+    --income: 160 85% 40%;
     --income-foreground: 0 0% 100%;
-    --expense: 0 72% 55%;
+    --expense: 355 82% 55%;
     --expense-foreground: 0 0% 100%;
 
-    --border: 240 20% 90%;
-    --input: 240 20% 90%;
-    --ring: 243 75% 59%;
+    --border: 215 30% 88%;
+    --input: 215 30% 88%;
+    --ring: 217 100% 50%;
 
     --radius: 0.875rem;
 
-    /* Chart colors — indigo family with accents */
-    --chart-1: 243 75% 59%;
-    --chart-2: 250 85% 70%;
-    --chart-3: 200 80% 55%;
-    --chart-4: 320 70% 60%;
-    --chart-5: 38 92% 55%;
-    --chart-6: 152 65% 45%;
+    /* Chart colors — cyan/blue tech spectrum */
+    --chart-1: 217 100% 50%;
+    --chart-2: 195 100% 55%;
+    --chart-3: 175 85% 45%;
+    --chart-4: 240 85% 65%;
+    --chart-5: 38 95% 55%;
+    --chart-6: 160 85% 45%;
 
-    /* Sidebar — deep midnight navy */
-    --sidebar-background: 240 45% 7%;
-    --sidebar-foreground: 240 20% 92%;
-    --sidebar-primary: 243 80% 65%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 243 40% 16%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 243 35% 18%;
-    --sidebar-ring: 243 80% 65%;
+    /* Sidebar — deep navy cyber */
+    --sidebar-background: 220 65% 6%;
+    --sidebar-foreground: 210 30% 92%;
+    --sidebar-primary: 200 100% 60%;
+    --sidebar-primary-foreground: 220 65% 6%;
+    --sidebar-accent: 220 50% 14%;
+    --sidebar-accent-foreground: 195 100% 70%;
+    --sidebar-border: 220 45% 16%;
+    --sidebar-ring: 200 100% 60%;
   }
 
   .dark {
-    --background: 240 45% 5%;
-    --foreground: 240 20% 95%;
+    --background: 222 55% 5%;
+    --foreground: 210 30% 96%;
 
-    --card: 240 40% 9%;
-    --card-foreground: 240 20% 95%;
+    --card: 220 50% 9%;
+    --card-foreground: 210 30% 96%;
 
-    --popover: 240 40% 9%;
-    --popover-foreground: 240 20% 95%;
+    --popover: 220 50% 9%;
+    --popover-foreground: 210 30% 96%;
 
-    --primary: 243 80% 65%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 250 85% 75%;
+    --primary: 200 100% 60%;
+    --primary-foreground: 222 55% 5%;
+    --primary-glow: 195 100% 68%;
 
-    --secondary: 240 30% 14%;
-    --secondary-foreground: 240 20% 95%;
+    --secondary: 220 40% 14%;
+    --secondary-foreground: 210 30% 96%;
 
-    --muted: 240 30% 13%;
-    --muted-foreground: 240 15% 65%;
+    --muted: 220 40% 13%;
+    --muted-foreground: 210 20% 68%;
 
-    --accent: 250 85% 70%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 195 100% 60%;
+    --accent-foreground: 222 55% 5%;
 
-    --success: 152 60% 48%;
+    --success: 160 75% 48%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 90% 55%;
+    --warning: 38 92% 58%;
     --warning-foreground: 38 95% 10%;
 
-    --destructive: 0 70% 55%;
+    --destructive: 355 78% 58%;
     --destructive-foreground: 0 0% 100%;
 
-    --income: 152 60% 48%;
+    --income: 160 75% 48%;
     --income-foreground: 0 0% 100%;
-    --expense: 0 70% 58%;
+    --expense: 355 78% 60%;
     --expense-foreground: 0 0% 100%;
 
-    --border: 240 30% 18%;
-    --input: 240 30% 18%;
-    --ring: 243 80% 65%;
+    --border: 220 40% 18%;
+    --input: 220 40% 18%;
+    --ring: 200 100% 60%;
 
-    --sidebar-background: 240 50% 4%;
-    --sidebar-foreground: 240 20% 92%;
-    --sidebar-primary: 243 85% 70%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 243 40% 14%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 243 35% 16%;
-    --sidebar-ring: 243 85% 70%;
+    --sidebar-background: 222 65% 4%;
+    --sidebar-foreground: 210 30% 92%;
+    --sidebar-primary: 195 100% 65%;
+    --sidebar-primary-foreground: 222 65% 4%;
+    --sidebar-accent: 220 50% 12%;
+    --sidebar-accent-foreground: 195 100% 72%;
+    --sidebar-border: 220 45% 14%;
+    --sidebar-ring: 195 100% 65%;
   }
 }
 

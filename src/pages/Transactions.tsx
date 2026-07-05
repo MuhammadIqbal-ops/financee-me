@@ -279,19 +279,20 @@ export default function Transactions() {
                 Tambah Transaksi
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[calc(100dvh-1rem)] flex flex-col">
+            <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60 sticky top-0 bg-card/95 backdrop-blur-sm z-10 rounded-t-2xl">
+              <DialogTitle className="text-lg">
                 {editingTransaction ? 'Edit Transaksi' : 'Tambah Transaksi'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs sm:text-sm">
                 {editingTransaction
                   ? 'Perbarui detail transaksi'
                   : 'Catat pemasukan atau pengeluaran baru'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
                 <FormField
                   control={form.control}
                   name="type"

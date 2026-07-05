@@ -59,11 +59,15 @@ import { exportTransactionsCsv } from '@/lib/exportCsv';
 import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
 
 const transactionSchema = z.object({
-  amount: z.number().positive('Jumlah harus lebih dari 0'),
+  amount: z
+    .number({ invalid_type_error: 'Jumlah harus berupa angka' })
+    .positive('Jumlah harus lebih dari 0')
+    .max(999_999_999_999, 'Jumlah terlalu besar')
+    .finite('Jumlah tidak valid'),
   type: z.enum(['income', 'expense']),
   category_id: z.string().min(1, 'Pilih kategori'),
-  date: z.date(),
-  note: z.string().optional(),
+  date: z.date({ required_error: 'Pilih tanggal' }),
+  note: z.string().trim().max(500, 'Catatan maksimal 500 karakter').optional(),
   wallet_id: z.string().optional(),
   currency: z.string().optional(),
 });
@@ -80,6 +84,7 @@ export default function Transactions() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [amountRaw, setAmountRaw] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
@@ -95,6 +100,7 @@ export default function Transactions() {
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
+    mode: 'onChange',
     defaultValues: {
       amount: 0,
       type: 'expense',
@@ -120,8 +126,9 @@ export default function Transactions() {
   const handleOpenDialog = (transaction?: Transaction) => {
     if (transaction) {
       setEditingTransaction(transaction);
+      const amt = Number(transaction.amount);
       form.reset({
-        amount: Number(transaction.amount),
+        amount: amt,
         type: transaction.type,
         category_id: transaction.category_id || '',
         date: new Date(transaction.date),
@@ -129,6 +136,7 @@ export default function Transactions() {
         wallet_id: (transaction as any).wallet_id || '',
         currency: transaction.currency || '',
       });
+      setAmountRaw(amt ? String(amt) : '');
       setReceiptPreview((transaction as any).receipt_url || null);
     } else {
       setEditingTransaction(null);
@@ -141,6 +149,7 @@ export default function Transactions() {
         wallet_id: wallets?.[0]?.id || '',
         currency: '',
       });
+      setAmountRaw('');
       setReceiptPreview(null);
     }
     setIsDialogOpen(true);

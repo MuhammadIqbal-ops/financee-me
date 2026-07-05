@@ -563,6 +563,8 @@ export default function Transactions() {
                     </div>
                   )}
                 </div>
+                </div>
+
 
                 <DialogFooter className="sticky bottom-0 z-10 flex-row gap-2 border-t border-border/60 bg-card/95 backdrop-blur-sm px-4 sm:px-6 py-3 rounded-b-2xl safe-bottom">
                   <Button

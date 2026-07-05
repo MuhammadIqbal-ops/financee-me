@@ -564,10 +564,24 @@ export default function Transactions() {
                   )}
                 </div>
 
-                <DialogFooter>
+                <DialogFooter className="sticky bottom-0 z-10 flex-row gap-2 border-t border-border/60 bg-card/95 backdrop-blur-sm px-4 sm:px-6 py-3 rounded-b-2xl safe-bottom">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Batal
+                  </Button>
                   <Button
                     type="submit"
-                    disabled={createTransaction.isPending || updateTransaction.isPending || uploading}
+                    className="flex-1 sm:flex-none"
+                    disabled={
+                      !form.formState.isValid ||
+                      createTransaction.isPending ||
+                      updateTransaction.isPending ||
+                      uploading
+                    }
                   >
                     {uploading ? 'Mengupload...' : editingTransaction ? 'Simpan' : 'Tambah'}
                   </Button>

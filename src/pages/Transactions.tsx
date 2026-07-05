@@ -324,21 +324,45 @@ export default function Transactions() {
                 <FormField
                   control={form.control}
                   name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Jumlah</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedCurrency = form.watch('currency') || currency;
+                    const parsed = Number(amountRaw.replace(/,/g, '.')) || 0;
+                    return (
+                      <FormItem>
+                        <FormLabel className="flex items-center justify-between">
+                          <span>Jumlah</span>
+                          {parsed > 0 && (
+                            <span className="text-xs font-normal text-primary">
+                              {formatCurrency(parsed, selectedCurrency)}
+                            </span>
+                          )}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            pattern="[0-9.,]*"
+                            placeholder="0"
+                            value={amountRaw}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.,]/g, '');
+                              setAmountRaw(v);
+                              const n = parseFloat(v.replace(/,/g, '.'));
+                              field.onChange(Number.isFinite(n) ? n : 0);
+                            }}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
+                            className="text-lg font-semibold tabular-nums h-12"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
+
 
                 {/* Currency selector */}
                 <FormField

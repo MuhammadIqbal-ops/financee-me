@@ -59,11 +59,15 @@ import { exportTransactionsCsv } from '@/lib/exportCsv';
 import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
 
 const transactionSchema = z.object({
-  amount: z.number().positive('Jumlah harus lebih dari 0'),
+  amount: z
+    .number({ invalid_type_error: 'Jumlah harus berupa angka' })
+    .positive('Jumlah harus lebih dari 0')
+    .max(999_999_999_999, 'Jumlah terlalu besar')
+    .finite('Jumlah tidak valid'),
   type: z.enum(['income', 'expense']),
   category_id: z.string().min(1, 'Pilih kategori'),
-  date: z.date(),
-  note: z.string().optional(),
+  date: z.date({ required_error: 'Pilih tanggal' }),
+  note: z.string().trim().max(500, 'Catatan maksimal 500 karakter').optional(),
   wallet_id: z.string().optional(),
   currency: z.string().optional(),
 });
@@ -80,6 +84,7 @@ export default function Transactions() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [amountRaw, setAmountRaw] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
@@ -95,6 +100,7 @@ export default function Transactions() {
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
+    mode: 'onChange',
     defaultValues: {
       amount: 0,
       type: 'expense',
@@ -120,8 +126,9 @@ export default function Transactions() {
   const handleOpenDialog = (transaction?: Transaction) => {
     if (transaction) {
       setEditingTransaction(transaction);
+      const amt = Number(transaction.amount);
       form.reset({
-        amount: Number(transaction.amount),
+        amount: amt,
         type: transaction.type,
         category_id: transaction.category_id || '',
         date: new Date(transaction.date),
@@ -129,6 +136,7 @@ export default function Transactions() {
         wallet_id: (transaction as any).wallet_id || '',
         currency: transaction.currency || '',
       });
+      setAmountRaw(amt ? String(amt) : '');
       setReceiptPreview((transaction as any).receipt_url || null);
     } else {
       setEditingTransaction(null);
@@ -141,6 +149,7 @@ export default function Transactions() {
         wallet_id: wallets?.[0]?.id || '',
         currency: '',
       });
+      setAmountRaw('');
       setReceiptPreview(null);
     }
     setIsDialogOpen(true);
@@ -270,19 +279,20 @@ export default function Transactions() {
                 Tambah Transaksi
               </Button>
             </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[calc(100dvh-1rem)] flex flex-col">
+            <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60 sticky top-0 bg-card/95 backdrop-blur-sm z-10 rounded-t-2xl">
+              <DialogTitle className="text-lg">
                 {editingTransaction ? 'Edit Transaksi' : 'Tambah Transaksi'}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs sm:text-sm">
                 {editingTransaction
                   ? 'Perbarui detail transaksi'
                   : 'Catat pemasukan atau pengeluaran baru'}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
                 <FormField
                   control={form.control}
                   name="type"
@@ -314,21 +324,45 @@ export default function Transactions() {
                 <FormField
                   control={form.control}
                   name="amount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Jumlah</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const selectedCurrency = form.watch('currency') || currency;
+                    const parsed = Number(amountRaw.replace(/,/g, '.')) || 0;
+                    return (
+                      <FormItem>
+                        <FormLabel className="flex items-center justify-between">
+                          <span>Jumlah</span>
+                          {parsed > 0 && (
+                            <span className="text-xs font-normal text-primary">
+                              {formatCurrency(parsed, selectedCurrency)}
+                            </span>
+                          )}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            autoComplete="off"
+                            pattern="[0-9.,]*"
+                            placeholder="0"
+                            value={amountRaw}
+                            onChange={(e) => {
+                              const v = e.target.value.replace(/[^0-9.,]/g, '');
+                              setAmountRaw(v);
+                              const n = parseFloat(v.replace(/,/g, '.'));
+                              field.onChange(Number.isFinite(n) ? n : 0);
+                            }}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                            ref={field.ref}
+                            className="text-lg font-semibold tabular-nums h-12"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
+
 
                 {/* Currency selector */}
                 <FormField
@@ -529,11 +563,27 @@ export default function Transactions() {
                     </div>
                   )}
                 </div>
+                </div>
 
-                <DialogFooter>
+
+                <DialogFooter className="sticky bottom-0 z-10 flex-row gap-2 border-t border-border/60 bg-card/95 backdrop-blur-sm px-4 sm:px-6 py-3 rounded-b-2xl safe-bottom">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => setIsDialogOpen(false)}
+                  >
+                    Batal
+                  </Button>
                   <Button
                     type="submit"
-                    disabled={createTransaction.isPending || updateTransaction.isPending || uploading}
+                    className="flex-1 sm:flex-none"
+                    disabled={
+                      !form.formState.isValid ||
+                      createTransaction.isPending ||
+                      updateTransaction.isPending ||
+                      uploading
+                    }
                   >
                     {uploading ? 'Mengupload...' : editingTransaction ? 'Simpan' : 'Tambah'}
                   </Button>

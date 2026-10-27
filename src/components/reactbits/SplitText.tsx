@@ -18,8 +18,8 @@ interface SplitTextProps {
  */
 export function SplitText({ text, className, delay = 0, stagger = 0.06, as = 'h1' }: SplitTextProps) {
   const words = useMemo(() => text.split(' '), [text]);
-  const ref = useState(null);
-  const inView = useInView(ref.current, { once: true, margin: '-10% 0px' });
+  const ref = useRef<HTMLHeadingElement>(null);
+  const inView = useInView(ref, { once: true, margin: '-10% 0px' });
 
   const container: Variants = {
     hidden: {},

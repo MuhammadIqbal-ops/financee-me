@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn, range } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface PaginationProps {
   page: number;
@@ -28,9 +28,11 @@ export function Pagination({
 
   const start = (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
-  const pages = range(1, totalPages).filter(
-    (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1
-  );
+  const pageNumbers: number[] = [];
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) pageNumbers.push(p);
+  }
+  const pages = pageNumbers;
 
   return (
     <div className={cn('flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-3', className)}>

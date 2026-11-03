@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { CalendarIcon, Plus, Pencil, Trash2, Search, Filter, Upload, Image, X, Globe, Download } from 'lucide-react';
+import { CalendarIcon, Plus, Pencil, Trash2, Image, X, Globe, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Form,
@@ -35,7 +34,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListSkeleton } from '@/components/common/ListSkeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +56,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { exportTransactionsCsv } from '@/lib/exportCsv';
 import { SUPPORTED_CURRENCIES, useExchangeRates, convertAmount } from '@/hooks/useExchangeRates';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DataToolbar } from '@/components/common/DataToolbar';
+import { Pagination } from '@/components/common/Pagination';
+import { EmptyState } from '@/components/common/EmptyState';
 
 const transactionSchema = z.object({
   amount: z
@@ -85,6 +88,8 @@ export default function Transactions() {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [amountRaw, setAmountRaw] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { data: transactions, isLoading } = useTransactions();
@@ -122,6 +127,8 @@ export default function Transactions() {
     const matchesType = filterType === 'all' || t.type === filterType;
     return (searchQuery === '' || matchesSearch) && matchesType;
   });
+
+  const pagedTransactions = filteredTransactions?.slice((page - 1) * pageSize, page * pageSize) || [];
 
   const handleOpenDialog = (transaction?: Transaction) => {
     if (transaction) {
@@ -258,27 +265,27 @@ export default function Transactions() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Transaksi</h1>
-          <p className="text-muted-foreground">Kelola pemasukan dan pengeluaran</p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => exportTransactionsCsv(filteredTransactions || [], currency)}
-            disabled={!filteredTransactions?.length}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Export CSV</span>
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenDialog()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Tambah Transaksi
-              </Button>
-            </DialogTrigger>
+      <PageHeader
+        title="Transaksi"
+        description="Kelola pemasukan dan pengeluaran"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => exportTransactionsCsv(filteredTransactions || [], currency)}
+              disabled={!filteredTransactions?.length}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="w-4 h-4 mr-2" />
+              Tambah Transaksi
+            </Button>
+          </>
+        }
+      />
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-lg p-0 gap-0 max-h-[calc(100dvh-1rem)] flex flex-col">
             <DialogHeader className="px-4 sm:px-6 pt-5 pb-3 border-b border-border/60 sticky top-0 bg-card/95 backdrop-blur-sm z-10 rounded-t-2xl">
               <DialogTitle className="text-lg">
@@ -591,9 +598,7 @@ export default function Transactions() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
-        </div>
-      </div>
+      </Dialog>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">

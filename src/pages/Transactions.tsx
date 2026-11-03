@@ -601,28 +601,23 @@ export default function Transactions() {
       </Dialog>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cari transaksi..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={filterType} onValueChange={(v) => setFilterType(v as TransactionType | 'all')}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue placeholder="Filter tipe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Semua</SelectItem>
-            <SelectItem value="income">Pemasukan</SelectItem>
-            <SelectItem value="expense">Pengeluaran</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <DataToolbar
+        search={searchQuery}
+        onSearchChange={(v) => { setSearchQuery(v); setPage(1); }}
+        searchPlaceholder="Cari transaksi..."
+        filters={
+          <Select value={filterType} onValueChange={(v) => { setFilterType(v as TransactionType | 'all'); setPage(1); }}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter tipe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua</SelectItem>
+              <SelectItem value="income">Pemasukan</SelectItem>
+              <SelectItem value="expense">Pengeluaran</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+      />
 
       {/* Transactions List */}
       <Card className="shadow-card">
@@ -631,20 +626,27 @@ export default function Transactions() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Skeleton key={i} className="h-16" />
-              ))}
-            </div>
+            <ListSkeleton rows={5} />
           ) : !filteredTransactions?.length ? (
-            <p className="text-center text-muted-foreground py-8">
-              {searchQuery || filterType !== 'all'
-                ? 'Tidak ada transaksi yang cocok'
-                : 'Belum ada transaksi'}
-            </p>
+            <EmptyState
+              title={searchQuery || filterType !== 'all' ? 'Tidak ada transaksi yang cocok' : 'Belum ada transaksi'}
+              description={
+                searchQuery || filterType !== 'all'
+                  ? 'Coba ubah kata kunci atau filter'
+                  : 'Catat pemasukan atau pengeluaran pertama Anda'
+              }
+              action={
+                !searchQuery && filterType === 'all' ? (
+                  <Button onClick={() => handleOpenDialog()}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Transaksi
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <div className="space-y-3">
-              {filteredTransactions.map((transaction) => (
+              {pagedTransactions.map((transaction) => (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"

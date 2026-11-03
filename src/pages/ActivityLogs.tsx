@@ -6,17 +6,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Trash2, Activity, Plus, Pencil, Trash, ArrowRightLeft, Download, Search, CalendarIcon, X } from 'lucide-react';
+import { Trash2, Activity, Plus, Pencil, Trash, ArrowRightLeft, Download, CalendarIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DataToolbar } from '@/components/common/DataToolbar';
+import { Pagination } from '@/components/common/Pagination';
+import { ListSkeleton } from '@/components/common/ListSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
 
 const actionIcons: Record<string, React.ReactNode> = {
   create: <Plus className="h-4 w-4" />,
@@ -51,6 +55,10 @@ export default function ActivityLogs() {
   const [entityFilter, setEntityFilter] = useState('all');
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
+
+  const resetPage = () => setPage(1);
 
   const handleClearAll = () => {
     clearLogs.mutate(undefined, {
@@ -64,6 +72,7 @@ export default function ActivityLogs() {
     setEntityFilter('all');
     setDateFrom(undefined);
     setDateTo(undefined);
+    resetPage();
   };
 
   const hasFilters = search || entityFilter !== 'all' || dateFrom || dateTo;
@@ -83,7 +92,9 @@ export default function ActivityLogs() {
     return true;
   });
 
-  const groupedLogs = filteredLogs.reduce<Record<string, typeof filteredLogs>>((acc, log) => {
+  const pagedLogs = filteredLogs.slice((page - 1) * pageSize, page * pageSize);
+
+  const groupedLogs = pagedLogs.reduce<Record<string, typeof pagedLogs>>((acc, log) => {
     const date = format(new Date(log.created_at), 'yyyy-MM-dd');
     if (!acc[date]) acc[date] = [];
     acc[date].push(log);

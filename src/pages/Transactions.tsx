@@ -724,6 +724,13 @@ export default function Transactions() {
         </CardContent>
       </Card>
 
+      <Pagination
+        page={page}
+        pageSize={pageSize}
+        total={filteredTransactions?.length || 0}
+        onPageChange={setPage}
+      />
+
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

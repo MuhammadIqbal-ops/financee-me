@@ -22,6 +22,12 @@ import { useDebts, useCreateDebt, useUpdateDebt, useDeleteDebt, Debt, DebtType }
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DataToolbar } from '@/components/common/DataToolbar';
+import { Pagination } from '@/components/common/Pagination';
+import { ListSkeleton } from '@/components/common/ListSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const debtSchema = z.object({
   person_name: z.string().min(1, 'Nama wajib diisi'),
@@ -40,6 +46,10 @@ export default function Debts() {
   const [payDialog, setPayDialog] = useState<Debt | null>(null);
   const [payAmount, setPayAmount] = useState(0);
   const [tab, setTab] = useState('all');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const debouncedSearch = useDebouncedValue(search);
 
   const { data: debts, isLoading } = useDebts();
   const { data: profile } = useProfile();
@@ -101,18 +111,18 @@ export default function Debts() {
     if (tab === 'receivable') return d.type === 'receivable' && d.status !== 'paid';
     if (tab === 'paid') return d.status === 'paid';
     return true;
+  }).filter((debt) => {
+    const query = debouncedSearch.trim().toLowerCase();
+    return !query || debt.person_name.toLowerCase().includes(query) || debt.note?.toLowerCase().includes(query);
   }) || [];
+  const pagedDebts = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const totalPayable = debts?.filter(d => d.type === 'payable' && d.status !== 'paid').reduce((s, d) => s + d.amount - d.paid_amount, 0) || 0;
   const totalReceivable = debts?.filter(d => d.type === 'receivable' && d.status !== 'paid').reduce((s, d) => s + d.amount - d.paid_amount, 0) || 0;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Hutang & Piutang</h1>
-          <p className="text-muted-foreground">Kelola catatan hutang dan piutang</p>
-        </div>
+      <PageHeader title="Hutang & Piutang" description="Kelola catatan hutang dan piutang" actions={(
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => openDialog()}><Plus className="w-4 h-4 mr-2" />Tambah</Button>
@@ -186,7 +196,7 @@ export default function Debts() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+      )} />
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -219,21 +229,26 @@ export default function Debts() {
         <CardHeader>
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
-              <TabsTrigger value="all">Semua</TabsTrigger>
-              <TabsTrigger value="payable">Hutang</TabsTrigger>
-              <TabsTrigger value="receivable">Piutang</TabsTrigger>
-              <TabsTrigger value="paid">Lunas</TabsTrigger>
+              <TabsTrigger value="all" onClick={() => setPage(1)}>Semua</TabsTrigger>
+              <TabsTrigger value="payable" onClick={() => setPage(1)}>Hutang</TabsTrigger>
+              <TabsTrigger value="receivable" onClick={() => setPage(1)}>Piutang</TabsTrigger>
+              <TabsTrigger value="paid" onClick={() => setPage(1)}>Lunas</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
         <CardContent>
+          <DataToolbar search={search} searchPlaceholder="Cari nama atau catatan..." onSearchChange={(value) => { setSearch(value); setPage(1); }} />
           {isLoading ? (
-            <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />)}</div>
+            <ListSkeleton rows={4} />
           ) : !filtered.length ? (
-            <p className="text-center text-muted-foreground py-8">Tidak ada data</p>
+            <EmptyState
+              icon={<CreditCard className="h-8 w-8" />}
+              title={search ? 'Data tidak ditemukan' : 'Tidak ada data'}
+              description={search ? 'Coba kata pencarian lain.' : 'Catatan hutang dan piutang akan muncul di sini.'}
+            />
           ) : (
             <div className="space-y-3">
-              {filtered.map(d => {
+              {pagedDebts.map(d => {
                 const remaining = d.amount - d.paid_amount;
                 const pct = d.amount > 0 ? (d.paid_amount / d.amount) * 100 : 0;
                 const isOverdue = d.due_date && new Date(d.due_date) < new Date() && d.status !== 'paid';
@@ -288,6 +303,9 @@ export default function Debts() {
                 );
               })}
             </div>
+          )}
+          {!isLoading && filtered.length > 0 && (
+            <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
           )}
         </CardContent>
       </Card>

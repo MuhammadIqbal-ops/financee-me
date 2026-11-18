@@ -17,6 +17,12 @@ import { useWalletBalances, useCreateWallet, useUpdateWallet, useDeleteWallet, W
 import { useWalletTransfers, useCreateTransfer } from '@/hooks/useWalletTransfers';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/currency';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DataToolbar } from '@/components/common/DataToolbar';
+import { Pagination } from '@/components/common/Pagination';
+import { ListSkeleton } from '@/components/common/ListSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const walletSchema = z.object({
   name: z.string().min(1, 'Nama wajib diisi'),
@@ -115,6 +121,10 @@ export default function Wallets() {
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [editing, setEditing] = useState<(Wallet & { balance: number }) | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const debouncedSearch = useDebouncedValue(search);
 
   const { data: wallets, isLoading } = useWalletBalances();
   const { data: transfers } = useWalletTransfers();
@@ -171,17 +181,15 @@ export default function Wallets() {
   };
 
   const totalBalance = wallets?.reduce((sum, w) => sum + w.balance, 0) || 0;
+  const filteredWallets = (wallets ?? []).filter((wallet) => wallet.name.toLowerCase().includes(debouncedSearch.trim().toLowerCase()));
+  const pagedWallets = filteredWallets.slice((page - 1) * pageSize, page * pageSize);
 
   const getWalletName = (id: string) => wallets?.find(w => w.id === id)?.name || '?';
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dompet</h1>
-          <p className="text-muted-foreground">Kelola akun keuangan Anda</p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader title="Dompet" description="Kelola akun keuangan Anda" actions={(
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => { transferForm.reset(); setIsTransferOpen(true); }}>
             <ArrowRightLeft className="w-4 h-4 mr-2" />Transfer
           </Button>
@@ -237,7 +245,7 @@ export default function Wallets() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+      )} />
 
       {/* Transfer Dialog */}
       <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
@@ -314,15 +322,25 @@ export default function Wallets() {
       </Card>
 
       {/* Wallet List */}
+      <DataToolbar
+        search={search}
+        searchPlaceholder="Cari nama dompet..."
+        onSearchChange={(value) => { setSearch(value); setPage(1); }}
+      />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="h-32 animate-pulse bg-muted" />
-          ))
-        ) : !wallets?.length ? (
-          <p className="text-muted-foreground col-span-full text-center py-8">Belum ada dompet</p>
+          <ListSkeleton rows={3} rowHeight="h-28" className="col-span-full" />
+        ) : !filteredWallets.length ? (
+          <div className="col-span-full">
+            <EmptyState
+              icon={<WalletIcon className="h-8 w-8" />}
+              title={debouncedSearch ? 'Dompet tidak ditemukan' : 'Belum ada dompet'}
+              description={debouncedSearch ? 'Coba kata pencarian lain.' : 'Tambahkan dompet untuk mulai mengelola saldo.'}
+              action={!debouncedSearch ? <Button onClick={() => openDialog()}><Plus className="mr-2 h-4 w-4" />Tambah Dompet</Button> : undefined}
+            />
+          </div>
         ) : (
-          wallets.map(w => (
+          pagedWallets.map(w => (
             <Card key={w.id} className="shadow-card hover:shadow-elevated transition-shadow">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
@@ -354,6 +372,9 @@ export default function Wallets() {
           ))
         )}
       </div>
+      {!isLoading && filteredWallets.length > 0 && (
+        <Pagination page={page} pageSize={pageSize} total={filteredWallets.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
+      )}
 
       {/* Transfer History with Date Filter */}
       <TransferHistory transfers={transfers || []} wallets={wallets || []} currency={currency} />

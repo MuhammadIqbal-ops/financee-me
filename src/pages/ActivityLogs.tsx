@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Trash2, Activity, Plus, Pencil, Trash, ArrowRightLeft, Download, CalendarIcon, X } from 'lucide-react';
+import { Trash2, Activity, Plus, Pencil, Trash, ArrowRightLeft, Download, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -105,12 +105,10 @@ export default function ActivityLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Log Aktivitas</h1>
-          <p className="text-muted-foreground">Riwayat semua aktivitas akun Anda</p>
-        </div>
-        {logs.length > 0 && (
+      <PageHeader
+        title="Log Aktivitas"
+        description="Riwayat semua aktivitas akun Anda"
+        actions={logs.length > 0 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm" className="text-destructive">
@@ -130,22 +128,15 @@ export default function ActivityLogs() {
             </AlertDialogContent>
           </AlertDialog>
         )}
-      </div>
+      />
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cari aktivitas..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Select value={entityFilter} onValueChange={setEntityFilter}>
+      <DataToolbar
+        search={search}
+        searchPlaceholder="Cari aktivitas..."
+        onSearchChange={(value) => { setSearch(value); resetPage(); }}
+        filters={(
+          <>
+            <Select value={entityFilter} onValueChange={(value) => { setEntityFilter(value); resetPage(); }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Semua tipe" />
               </SelectTrigger>
@@ -164,7 +155,7 @@ export default function ActivityLogs() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className="p-3 pointer-events-auto" />
+                <Calendar mode="single" selected={dateFrom} onSelect={(date) => { setDateFrom(date); resetPage(); }} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
             <Popover>
@@ -175,20 +166,14 @@ export default function ActivityLogs() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className="p-3 pointer-events-auto" />
+                <Calendar mode="single" selected={dateTo} onSelect={(date) => { setDateTo(date); resetPage(); }} initialFocus className="p-3 pointer-events-auto" />
               </PopoverContent>
             </Popover>
-            {hasFilters && (
-              <Button variant="ghost" size="icon" onClick={clearFilters} title="Reset filter">
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          {hasFilters && (
-            <p className="text-xs text-muted-foreground mt-2">{filteredLogs.length} dari {logs.length} aktivitas</p>
-          )}
-        </CardContent>
-      </Card>
+            {hasFilters && <Button variant="outline" onClick={clearFilters}>Reset filter</Button>}
+          </>
+        )}
+        below={hasFilters ? <p className="text-xs text-muted-foreground">{filteredLogs.length} dari {logs.length} aktivitas</p> : undefined}
+      />
 
       <Card>
         <CardHeader>
@@ -199,13 +184,13 @@ export default function ActivityLogs() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-muted-foreground text-center py-8">Memuat...</p>
+            <ListSkeleton rows={5} />
           ) : filteredLogs.length === 0 ? (
-            <div className="text-center py-12">
-              <Activity className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-              <p className="text-muted-foreground">{hasFilters ? 'Tidak ada aktivitas yang cocok' : 'Belum ada aktivitas tercatat'}</p>
-              {!hasFilters && <p className="text-sm text-muted-foreground/60 mt-1">Aktivitas akan muncul saat Anda membuat, mengubah, atau menghapus data</p>}
-            </div>
+            <EmptyState
+              icon={<Activity className="h-8 w-8" />}
+              title={hasFilters ? 'Tidak ada aktivitas yang cocok' : 'Belum ada aktivitas tercatat'}
+              description={!hasFilters ? 'Aktivitas akan muncul saat Anda membuat, mengubah, atau menghapus data.' : undefined}
+            />
           ) : (
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-6">
@@ -242,6 +227,7 @@ export default function ActivityLogs() {
           )}
         </CardContent>
       </Card>
+      <Pagination page={page} pageSize={pageSize} total={filteredLogs.length} onPageChange={setPage} />
     </div>
   );
 }

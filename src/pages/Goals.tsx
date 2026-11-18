@@ -43,6 +43,12 @@ import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/currency';
 import { Goal } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DataToolbar } from '@/components/common/DataToolbar';
+import { Pagination } from '@/components/common/Pagination';
+import { ListSkeleton } from '@/components/common/ListSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const goalSchema = z.object({
   name: z.string().min(1, 'Nama target wajib diisi'),
@@ -59,6 +65,10 @@ export default function Goals() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [addSavingsGoal, setAddSavingsGoal] = useState<Goal | null>(null);
   const [savingsAmount, setSavingsAmount] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const debouncedSearch = useDebouncedValue(search);
 
   const { data: goals, isLoading } = useGoals();
   const { data: profile } = useProfile();
@@ -154,21 +164,19 @@ export default function Goals() {
     return { text: format(new Date(deadline), 'd MMM yyyy', { locale: id }), color: 'text-muted-foreground' };
   };
 
-  const completedGoals = goals?.filter((g) => Number(g.current_amount) >= Number(g.target_amount)) || [];
-  const activeGoals = goals?.filter((g) => Number(g.current_amount) < Number(g.target_amount)) || [];
+  const matchingGoals = (goals ?? []).filter((goal) => goal.name.toLowerCase().includes(debouncedSearch.trim().toLowerCase()));
+  const completedGoals = matchingGoals.filter((g) => Number(g.current_amount) >= Number(g.target_amount));
+  const activeGoals = matchingGoals.filter((g) => Number(g.current_amount) < Number(g.target_amount));
+  const pagedActiveGoals = activeGoals.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Target Keuangan</h1>
-          <p className="text-muted-foreground">Kelola target tabungan dan investasi</p>
-        </div>
+      <PageHeader title="Target Keuangan" description="Kelola target tabungan dan investasi" actions={(
         <Button onClick={() => handleOpenDialog()}>
           <Plus className="w-4 h-4 mr-2" />
           Tambah Target
         </Button>
-      </div>
+      )} />
 
       {/* Summary */}
       <div className="grid gap-4 md:grid-cols-2">
@@ -200,6 +208,8 @@ export default function Goals() {
         </Card>
       </div>
 
+      <DataToolbar search={search} searchPlaceholder="Cari nama target..." onSearchChange={(value) => { setSearch(value); setPage(1); }} />
+
       {/* Active Goals */}
       <Card className="shadow-card">
         <CardHeader>
@@ -208,18 +218,17 @@ export default function Goals() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-32" />
-              ))}
-            </div>
+            <ListSkeleton rows={3} rowHeight="h-28" />
           ) : activeGoals.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Belum ada target aktif
-            </p>
+            <EmptyState
+              icon={<Target className="h-8 w-8" />}
+              title={search && completedGoals.length ? 'Tidak ada target aktif yang cocok' : search ? 'Target tidak ditemukan' : 'Belum ada target aktif'}
+              description={search ? 'Coba kata pencarian lain.' : 'Tambahkan target untuk mulai merencanakan tabungan.'}
+              action={!search && !goals?.length ? <Button onClick={() => handleOpenDialog()}><Plus className="mr-2 h-4 w-4" />Tambah Target</Button> : undefined}
+            />
           ) : (
             <div className="space-y-4">
-              {activeGoals.map((goal) => {
+              {pagedActiveGoals.map((goal) => {
                 const percentage = Math.min((Number(goal.current_amount) / Number(goal.target_amount)) * 100, 100);
                 const deadlineStatus = getDeadlineStatus(goal.deadline);
 
@@ -286,6 +295,9 @@ export default function Goals() {
                 );
               })}
             </div>
+          )}
+          {!isLoading && activeGoals.length > 0 && (
+            <Pagination page={page} pageSize={pageSize} total={activeGoals.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
           )}
         </CardContent>
       </Card>

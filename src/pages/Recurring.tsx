@@ -58,6 +58,12 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Plus, Trash2, Pencil, RefreshCw, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { PageHeader } from '@/components/common/PageHeader';
+import { DataToolbar } from '@/components/common/DataToolbar';
+import { Pagination } from '@/components/common/Pagination';
+import { ListSkeleton } from '@/components/common/ListSkeleton';
+import { EmptyState } from '@/components/common/EmptyState';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const formSchema = z.object({
   amount: z.string().min(1, 'Nominal harus diisi'),
@@ -74,6 +80,11 @@ type FormData = z.infer<typeof formSchema>;
 export default function Recurring() {
   const [open, setOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RecurringTransaction | null>(null);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const debouncedSearch = useDebouncedValue(search);
   const { data: profile } = useProfile();
   const { data: categories } = useCategories();
   const { data: recurringTransactions, isLoading } = useRecurringTransactions();
@@ -157,16 +168,16 @@ export default function Recurring() {
 
   const currency = profile?.currency || 'IDR';
   const isPending = createMutation.isPending || updateMutation.isPending;
+  const filteredRecurring = (recurringTransactions ?? []).filter((item) => {
+    const query = debouncedSearch.trim().toLowerCase();
+    const matchesSearch = !query || item.category?.name.toLowerCase().includes(query) || item.note?.toLowerCase().includes(query);
+    return matchesSearch && (typeFilter === 'all' || item.type === typeFilter);
+  });
+  const pagedRecurring = filteredRecurring.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Transaksi Berulang</h1>
-          <p className="text-muted-foreground">
-            Kelola transaksi otomatis seperti gaji, tagihan, atau langganan
-          </p>
-        </div>
+      <PageHeader title="Transaksi Berulang" description="Kelola transaksi otomatis seperti gaji, tagihan, atau langganan" actions={(
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditingItem(null); }}>
           <DialogTrigger asChild>
             <Button className="gap-2" onClick={openCreateDialog}>
@@ -318,7 +329,7 @@ export default function Recurring() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+      )} />
 
       <Card className="shadow-card">
         <CardHeader>
@@ -331,15 +342,35 @@ export default function Recurring() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <DataToolbar
+            search={search}
+            searchPlaceholder="Cari kategori atau catatan..."
+            onSearchChange={(value) => { setSearch(value); setPage(1); }}
+            filters={(
+              <Select value={typeFilter} onValueChange={(value: 'all' | 'income' | 'expense') => { setTypeFilter(value); setPage(1); }}>
+                <SelectTrigger className="w-full sm:w-[160px]" aria-label="Filter tipe transaksi">
+                  <SelectValue placeholder="Semua tipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua tipe</SelectItem>
+                  <SelectItem value="income">Pemasukan</SelectItem>
+                  <SelectItem value="expense">Pengeluaran</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Memuat...</div>
-          ) : recurringTransactions?.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Belum ada transaksi berulang
-            </div>
+            <ListSkeleton rows={4} />
+          ) : filteredRecurring.length === 0 ? (
+            <EmptyState
+              icon={<RefreshCw className="h-8 w-8" />}
+              title={search || typeFilter !== 'all' ? 'Transaksi tidak ditemukan' : 'Belum ada transaksi berulang'}
+              description={search || typeFilter !== 'all' ? 'Coba ubah pencarian atau tipe transaksi.' : 'Tambahkan transaksi untuk jadwal otomatis.'}
+              action={!search && typeFilter === 'all' ? <Button onClick={openCreateDialog}><Plus className="mr-2 h-4 w-4" />Tambah</Button> : undefined}
+            />
           ) : (
             <div className="space-y-3">
-              {recurringTransactions?.map((rt) => (
+              {pagedRecurring.map((rt) => (
                 <div
                   key={rt.id}
                   className="flex items-center justify-between rounded-lg p-3 bg-muted/50 hover:bg-muted transition-colors"
@@ -405,6 +436,9 @@ export default function Recurring() {
                 </div>
               ))}
             </div>
+          )}
+          {!isLoading && filteredRecurring.length > 0 && (
+            <Pagination page={page} pageSize={pageSize} total={filteredRecurring.length} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1); }} />
           )}
         </CardContent>
       </Card>

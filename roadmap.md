@@ -1,0 +1,3 @@
+- [ ] Fix ActivityLogs and the known TypeScript errors.
+- [ ] Apply shared search/filter toolbar, pagination, skeleton, and empty states to Wallets, Debts, Goals, and Recurring.
+- [ ] Verify the updated application and commit the changes.
